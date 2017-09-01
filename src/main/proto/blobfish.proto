@@ -1,24 +1,30 @@
-
+// blobfish blob container definition
+// @author Edi Permadi
 message Blobfish {
     required uint64 magic = 1;
     required uint32 version = 2;
     required Header header = 3;
     required Body body = 4;
 
+    // container header definition
     message Header {
         required Sender sender = 1;
         repeated Recipient recipient = 2;
         optional Password password = 3;
+        required uint64 created = 4;
 
+        // container sender detail
         message Sender {
             required bytes signing_certificate = 1;
         }
 
+        // container symmetric-key protection for recipient recipient
         message Recipient {
             required bytes ciphered_key = 1;
             required bytes hash_certificate = 2;
         }
 
+        // container password-based protection definition
         message Password {
             required uint32 iteration = 1;
             required bytes salt = 2;

@@ -16,3 +16,7 @@ An ugly blob container based on protobuf
 
 ## Algorithms
 Algorithm is defined by the version of the container
+
+| Version | Encryption | Signing | HMAC | 
+|---------|------------|---------|------|
+| 1       |  
