@@ -19,4 +19,8 @@ Algorithm is defined by the version of the container
 
 | Version | Key Derivation | Key Protection                        | Encryption               | Signing         | HMAC       | Hash   | 
 |---------|----------------|---------------------------------------|--------------------------|-----------------|------------|--------|
-| 1       | PBKDF2         | RSA/None/OAEPWithSHA256AndMGF1Padding | AES-128/CBC/PKCS5Padding | SHA256withECDSA | HmacSHA256 | SHA256 | 
+| 1       | PBKDF2         | RSA/None/OAEPWithSHA256AndMGF1Padding | AES-128/CBC/PKCS5Padding | SHA256withECDSA | HmacSHA256 | SHA256 |
+
+## Container Information
+- container magic code identifier is 0x75676c7966697368 -> 'uglyfish'
+- container extension is ".ugly" 
