@@ -4,35 +4,47 @@ message Blobfish {
     required uint32 version = 2;
     required Header header = 3;
     required Body body = 4;
-}
 
-message Header {
-    required Sender sender = 1;
-    repeated Recipient recipient = 2;
-}
+    message Header {
+        required Sender sender = 1;
+        repeated Recipient recipient = 2;
 
-message Body {
-    required bytes encrypted_tags = 1;
-    repeated Blob blob = 2;
-}
+        message Sender {
+            required bytes siginig_certificate = 1;
+        }
 
-message Sender {
-    required bytes siginig_certificate = 1;
-}
+        message Recipient {
+            required bytes ciphered_key = 1;
+            required bytes hash_certificate = 2;
+        }
+    }
 
-message Recipient {
-    required bytes ciphered_key = 1;
-    required bytes hash_certificate = 2; // uses sken-512-256
-}
+    message Body {
+        repeated Blob blob = 1;
 
-// blob entry
-message Blob {
-    required uint32 id = 1;
-    required bytes encrypted_payload = 2; // ecnrypted payload
-}
+        // blob entry
+        message Blob {
+            required uint32 id = 1;
+            required Entry payload = 2;
+            required Entry metadata = 3;
+        }
 
-// plain payload
-message Payload {
-    required string path = 1;
-    required bytes data = 2;
+        // cipher entry
+        message Entry {
+            required bytes ciphertext = 1;
+            required bytes hmac = 2;
+        }
+
+        // plain payload
+        message Payload {
+            required bytes data = 4;
+        }
+
+        // plain metadata
+        message Metadata {
+            required string path = 1;
+            repeated string tags = 2;
+            required string mime_type = 3;
+        }
+    }
 }
