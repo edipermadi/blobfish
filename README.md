@@ -17,6 +17,6 @@ An ugly blob container based on protobuf
 ## Algorithms
 Algorithm is defined by the version of the container
 
-| Version | Encryption | Signing | HMAC | 
-|---------|------------|---------|------|
-| 1       |  
+| Version | Key Derivation | Key Protection                        | Encryption               | Signing         | HMAC       | Hash   | 
+|---------|----------------|---------------------------------------|--------------------------|-----------------|------------|--------|
+| 1       | PBKDF2         | RSA/None/OAEPWithSHA256AndMGF1Padding | AES-128/CBC/PKCS5Padding | SHA256withECDSA | HmacSHA256 | SHA256 | 
