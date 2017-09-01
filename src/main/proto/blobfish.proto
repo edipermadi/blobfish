@@ -8,14 +8,20 @@ message Blobfish {
     message Header {
         required Sender sender = 1;
         repeated Recipient recipient = 2;
+        optional Password password = 3;
 
         message Sender {
-            required bytes siginig_certificate = 1;
+            required bytes signing_certificate = 1;
         }
 
         message Recipient {
             required bytes ciphered_key = 1;
             required bytes hash_certificate = 2;
+        }
+
+        message Password {
+            required uint32 iteration = 1;
+            required bytes salt = 2;
         }
     }
 
