@@ -39,6 +39,7 @@ message Blobfish {
         message Entry {
             required bytes ciphertext = 1;
             required bytes hmac = 2;
+            required bytes signature = 3;
         }
 
         // plain payload
