@@ -1,6 +1,7 @@
 package com.github.edipermadi.security.blobfish;
 
 import java.io.OutputStream;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
  */
 public final class ContainerEncoderBuilder {
     private int version = 1;
+    PrivateKey signingPrivateKey;
     X509Certificate signingCertificate;
     char[] password;
     List<X509Certificate> recipientCertificates = new ArrayList<>();
@@ -38,12 +40,21 @@ public final class ContainerEncoderBuilder {
      * @param signingCertificate signing certificate
      * @return this object
      */
-    public ContainerEncoderBuilder getSigningCertificate(final X509Certificate signingCertificate) {
+    public ContainerEncoderBuilder setSigningCertificate(final X509Certificate signingCertificate) {
         if ((signingCertificate == null) || ("EC".equals(signingCertificate.getPublicKey().getAlgorithm()))) {
             throw new IllegalArgumentException("illegal signing certificate");
         }
 
         this.signingCertificate = signingCertificate;
+        return this;
+    }
+
+    public ContainerEncoderBuilder setSigningKey(final PrivateKey signingPrivateKey) {
+        if ((signingPrivateKey == null) || ("EC".equals(signingPrivateKey.getAlgorithm()))) {
+            throw new IllegalArgumentException("illegal signing certificate");
+        }
+
+        this.signingPrivateKey = signingPrivateKey;
         return this;
     }
 
@@ -94,7 +105,9 @@ public final class ContainerEncoderBuilder {
      * @return container object that implements {@link ContainerEncoder}
      */
     public ContainerEncoder build() {
-        if (signingCertificate == null) {
+        if (signingPrivateKey == null) {
+            throw new IllegalStateException("signing private-key is mandatory");
+        } else if (signingCertificate == null) {
             throw new IllegalStateException("signing certificate is mandatory");
         } else if (recipientCertificates.isEmpty()) {
             throw new IllegalStateException("recipient certificate is mandatory");
