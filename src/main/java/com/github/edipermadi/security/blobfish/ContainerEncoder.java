@@ -8,7 +8,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Container encoder interface
@@ -16,5 +16,5 @@ import java.util.List;
  * @author Edi Permadi
  */
 public interface ContainerEncoder extends Closeable {
-    ContainerEncoderV1 addBlob(String path, List<String> tags, String mimeType, InputStream inputStream) throws IOException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, SignatureException;
+    ContainerEncoderV1 addBlob(String path, Set<String> tags, String mimeType, InputStream inputStream) throws IOException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, SignatureException;
 }
