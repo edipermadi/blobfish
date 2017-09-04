@@ -1,8 +1,15 @@
 package com.github.edipermadi.security.blobfish;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.OutputStream;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +111,7 @@ public final class ContainerEncoderBuilder {
      *
      * @return container object that implements {@link ContainerEncoder}
      */
-    public ContainerEncoder build() {
+    public ContainerEncoder build() throws NoSuchPaddingException, NoSuchAlgorithmException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException {
         if (signingPrivateKey == null) {
             throw new IllegalStateException("signing private-key is mandatory");
         } else if (signingCertificate == null) {
