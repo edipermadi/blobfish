@@ -3,7 +3,6 @@ package com.github.edipermadi.security.blobfish;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.crypto.*;
@@ -113,6 +112,18 @@ final class ContainerEncoderV1 implements ContainerEncoder {
         return this;
     }
 
+    @Override
+    public void write() throws IOException {
+        BlobfishProto.Blobfish.newBuilder()
+                .setMagic(MAGIC_CODE)
+                .setVersion(VERSION_NUMBER)
+                .setBody(bodyBuilder)
+                .setHeader(headerBuilder)
+                .build()
+                .writeTo(codedOutputStream);
+        outputStream.flush();
+    }
+
     private byte[] encodeMetadata(final String path, final Set<String> tags, final String mimeType) {
         return BlobfishProto.Blobfish.Body.Metadata.newBuilder()
                 .setPath(path)
@@ -168,22 +179,6 @@ final class ContainerEncoderV1 implements ContainerEncoder {
                     .setHmac(mac)
                     .setSignature(signature)
                     .build();
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        try {
-            BlobfishProto.Blobfish.newBuilder()
-                    .setMagic(MAGIC_CODE)
-                    .setVersion(VERSION_NUMBER)
-                    .setBody(bodyBuilder)
-                    .setHeader(headerBuilder)
-                    .build()
-                    .writeTo(codedOutputStream);
-            outputStream.flush();
-        } finally {
-            IOUtils.closeQuietly(outputStream);
         }
     }
 }

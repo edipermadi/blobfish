@@ -1,6 +1,11 @@
 package com.github.edipermadi.security.blobfish;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Parameters;
@@ -11,12 +16,16 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Container Encoder Builder Unit Test
@@ -25,10 +34,14 @@ import java.security.spec.InvalidKeySpecException;
  */
 public final class ContainerEncoderBuilderTest extends AbstractTest {
     private KeyStore keyStore;
+    private TikaConfig tika;
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
-    public void beforeClass(final String keystoreFilePath, final String keystoreFilePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+    public void beforeClass(final String keystoreFilePath, final String keystoreFilePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException, TikaException {
+        log("setting up tika");
+        this.tika = new TikaConfig();
+
         log("using keystore file path     : %s", keystoreFilePath);
         log("using keystore file password : %s", keystoreFilePassword);
 
@@ -311,6 +324,77 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
                     .setOutputStream(baos)
                     .build();
             Assert.assertNotNull(encoder);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2",
+            "blobfish-password",
+            "image1",
+            "image2",
+            "image3",
+            "image4",
+            "image5",
+            "image6",
+            "image7"})
+    @Test
+    public void testEncode(final String entryPassword,
+                           final String senderSigningAlias,
+                           final String senderEncryptionAlias,
+                           final String recipient1EncryptionAlias,
+                           final String recipient2EncryptionAlias,
+                           final String password,
+                           final String path1,
+                           final String path2,
+                           final String path3,
+                           final String path4,
+                           final String path5,
+                           final String path6,
+                           final String path7) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException, InvalidAlgorithmParameterException, UnrecoverableKeyException, KeyStoreException, IllegalBlockSizeException, CertificateEncodingException, InvalidKeySpecException, BadPaddingException {
+        final Set<String> tags = new HashSet<>();
+        tags.add("fish");
+        tags.add("deep-sea");
+
+        final File file = new File("target/output.ugly");
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final FileOutputStream fos = new FileOutputStream(file)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setPassword(password)
+                    .setOutputStream(fos)
+                    .build();
+            addBlob(encoder, path1, tags);
+            addBlob(encoder, path2, tags);
+            addBlob(encoder, path3, tags);
+            addBlob(encoder, path4, tags);
+            addBlob(encoder, path5, tags);
+            addBlob(encoder, path6, tags);
+            addBlob(encoder, path7, tags);
+            encoder.write();
+
+            log("created blob at %s", file.getAbsolutePath());
+        }
+    }
+
+    private void addBlob(final ContainerEncoder encoder, final String path, final Set<String> tags) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
+        final File file = new File(path);
+        final Metadata metadata = new Metadata();
+        metadata.set(Metadata.RESOURCE_NAME_KEY, file.toString());
+
+        try (final FileInputStream fis = new FileInputStream(file)) {
+            final MediaType type = tika.getDetector().detect(TikaInputStream.get(Paths.get(path)), metadata);
+            encoder.addBlob(path, tags, type.toString(), fis);
         }
     }
 }

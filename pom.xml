@@ -40,6 +40,12 @@
             <version>1.58</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>1.16</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

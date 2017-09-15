@@ -11,6 +11,14 @@
     <parameter name="keystore-alias-enc-receiver2" value="enc.receiver2"/>
     <parameter name="blobfish-password" value="7h15!5p@55w0rd"/>
 
+    <parameter name="image1" value="src/test/resources/amused.png"/>
+    <parameter name="image2" value="src/test/resources/annoyed.png"/>
+    <parameter name="image3" value="src/test/resources/free.png"/>
+    <parameter name="image4" value="src/test/resources/glasses.png"/>
+    <parameter name="image5" value="src/test/resources/happy.jpg"/>
+    <parameter name="image6" value="src/test/resources/sad.gif"/>
+    <parameter name="image7" value="src/test/resources/surprised.png"/>
+
     <test name="ContainerEncoderBuilder Test">
         <classes>
             <class name="com.github.edipermadi.security.blobfish.ContainerEncoderBuilderTest"/>
