@@ -94,4 +94,12 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
         new ContainerEncoderBuilder()
                 .setSigningCertificate(certificate);
     }
+
+    @Test
+    @Parameters({"keystore-alias-enc-sender"})
+    public void whenRsaEncryptionCertificateIsGivenThenNoExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+        new ContainerEncoderBuilder()
+                .addRecipientCertificate(certificate);
+    }
 }
