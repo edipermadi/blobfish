@@ -46,7 +46,19 @@ final class ContainerEncoderV1 implements ContainerEncoder {
     private final BlobfishProto.Blobfish.Body.Builder bodyBuilder;
     private final BlobfishProto.Blobfish.Header.Builder headerBuilder;
 
-    public ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    /**
+     * Container Encoder Version 1 Constructor
+     *
+     * @param builder Container Encoder Builder Instance
+     * @throws CertificateEncodingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     * @throws NoSuchPaddingException
+     * @throws InvalidKeyException
+     * @throws BadPaddingException
+     * @throws IllegalBlockSizeException
+     */
+    ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         signingPrivateKey = builder.signingPrivateKey;
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
         outputStream = builder.outputStream;
@@ -143,6 +155,7 @@ final class ContainerEncoderV1 implements ContainerEncoder {
 
     /**
      * Create blob entry
+     *
      * @param inputStream input stream to read plain blob payload
      * @return blobfish body entry
      * @throws IOException
