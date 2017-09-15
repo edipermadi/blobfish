@@ -33,11 +33,11 @@ final class ContainerEncoderV1 implements ContainerEncoder {
     private static final int ITERATION_NUMBER = 65536;
     private static final int KEY_LENGTH_BITS = 128;
     private static final String KEY_DERIVATION_ALGORITHM = "PBKDF2WithHmacSHA1";
-    private static final String KEY_PROTECTION_ALGORITHM = "RSA/None/OAEPWithSHA256AndMGF1Padding";
+    private static final String KEY_PROTECTION_ALGORITHM = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
     private static final String CIPHERING_ALGORITHM = "AES/CBC/PKCS5Padding";
     private static final String SIGNING_ALGORITHM = "SHA256withECDSA";
     private static final String MAC_ALGORITHM = "HmacSHA256";
-    private static final String HASH_ALGORITHM = "SHA256";
+    private static final String HASH_ALGORITHM = "SHA-256";
 
     private final PrivateKey signingPrivateKey;
     private final CodedOutputStream codedOutputStream;
