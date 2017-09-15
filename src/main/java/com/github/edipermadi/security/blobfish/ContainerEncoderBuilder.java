@@ -48,7 +48,7 @@ public final class ContainerEncoderBuilder {
      * @return this object
      */
     public ContainerEncoderBuilder setSigningCertificate(final X509Certificate signingCertificate) {
-        if ((signingCertificate == null) || ("EC".equals(signingCertificate.getPublicKey().getAlgorithm()))) {
+        if ((signingCertificate == null) || (!"EC".equals(signingCertificate.getPublicKey().getAlgorithm()))) {
             throw new IllegalArgumentException("illegal signing certificate");
         }
 
@@ -57,7 +57,7 @@ public final class ContainerEncoderBuilder {
     }
 
     public ContainerEncoderBuilder setSigningKey(final PrivateKey signingPrivateKey) {
-        if ((signingPrivateKey == null) || ("EC".equals(signingPrivateKey.getAlgorithm()))) {
+        if ((signingPrivateKey == null) || (!"EC".equals(signingPrivateKey.getAlgorithm()))) {
             throw new IllegalArgumentException("illegal signing certificate");
         }
 

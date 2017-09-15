@@ -1,0 +1,18 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="Unit Test" verbose="1">
+    <parameter name="keystore-file-path" value="src/test/resources/keystore.jks"/>
+    <parameter name="keystore-file-password" value="password"/>
+    <parameter name="keystore-entry-password" value="password"/>
+    <parameter name="keystore-alias-rootca" value="rootca"/>
+    <parameter name="keystore-alias-enc-sender" value="enc.sender"/>
+    <parameter name="keystore-alias-sig-sender" value="sig.sender"/>
+    <parameter name="keystore-alias-enc-receiver1" value="enc.receiver1"/>
+    <parameter name="keystore-alias-enc-receiver2" value="enc.receiver2"/>
+
+    <test name="ContainerEncoderBuilder Test">
+        <classes>
+            <class name="com.github.edipermadi.security.blobfish.ContainerEncoderBuilderTest"/>
+        </classes>
+    </test>
+</suite>

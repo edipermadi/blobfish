@@ -1,20 +1,43 @@
 package com.github.edipermadi.security.blobfish;
 
-import org.bouncycastle.asn1.DERInteger;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.V3TBSCertificateGenerator;
-import org.bouncycastle.asn1.x509.X509Name;
-import org.bouncycastle.jce.PrincipalUtil;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import java.math.BigInteger;
-import java.security.*;
-import java.util.Calendar;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
-public final class ContainerEncoderBuilderTest {
-    private static final int VALIDITY_DAYS = 365;
-    private static final String COMMON_NAME = "com.github.edipermadi.security.blobfish.test";
+/**
+ * Container Encoder Builder Unit Test
+ *
+ * @author Edi Permadi
+ */
+public final class ContainerEncoderBuilderTest extends AbstractTest {
+    private KeyStore keyStore;
 
+    @BeforeClass
+    @Parameters({"keystore-file-path", "keystore-file-password"})
+    public void beforeClass(final String keystoreFilePath, final String keystoreFilePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+        log("using keystore file path     : %s", keystoreFilePath);
+        log("using keystore file password : %s", keystoreFilePassword);
+
+        log("loading keystore");
+        this.keyStore = KeyStore.getInstance("JKS");
+        try (final FileInputStream fis = new FileInputStream(new File(keystoreFilePath))) {
+            keyStore.load(fis, keystoreFilePassword.toCharArray());
+        }
+        log("keystore loaded");
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Negative Test Cases
+    //------------------------------------------------------------------------------------------------------------------
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void whenNegativeVersionIsGivenThenExceptionThrown() {
         new ContainerEncoderBuilder()
@@ -33,20 +56,23 @@ public final class ContainerEncoderBuilderTest {
                 .setSigningCertificate(null);
     }
 
-//    @Test(expectedExceptions = IllegalArgumentException.class)
-//    public void whenRsaSigningCertificateIsGivenThenExceptionThrown() throws NoSuchAlgorithmException {
-//        final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-//        keyGen.initialize(2048);
-//
-//        final KeyPair keyPair = keyGen.genKeyPair();
-//        final PrivateKey privateKey = keyPair.getPrivate();
-//        final PublicKey publicKey = keyPair.getPublic();
-//
-//        final Calendar expiry = Calendar.getInstance();
-//        expiry.add(Calendar.DAY_OF_YEAR, VALIDITY_DAYS);
-//        final X500Name x509Name = new X500Name("CN=" + COMMON_NAME);
-//
-//        new ContainerEncoderBuilder()
-//                .setSigningCertificate(null);
-//    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Parameters({"keystore-alias-enc-sender"})
+    public void whenRsaSigningCertificateIsGivenThenExceptionThrown(final String keystoreAliasEncSender) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keystoreAliasEncSender);
+        new ContainerEncoderBuilder()
+                .setSigningCertificate(certificate);
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Positive Test Cases
+    //------------------------------------------------------------------------------------------------------------------
+    @Test
+    @Parameters({"keystore-alias-sig-sender"})
+    public void whenEcSigningCertificateIsGivenThenNoExceptionThrown(final String keystoreAliasEncSender) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keystoreAliasEncSender);
+        new ContainerEncoderBuilder()
+                .setSigningCertificate(certificate);
+    }
 }
