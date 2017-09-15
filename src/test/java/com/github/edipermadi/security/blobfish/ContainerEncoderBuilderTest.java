@@ -84,6 +84,24 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
                 .addRecipientCertificate(certificate);
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenNullPasswordIsGivenThenExceptionThrown() {
+        new ContainerEncoderBuilder()
+                .setPassword(null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenEmptyPasswordIsGivenThenExceptionThrown() {
+        new ContainerEncoderBuilder()
+                .setPassword("");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenWhitespacePasswordIsGivenThenExceptionThrown() {
+        new ContainerEncoderBuilder()
+                .setPassword("    ");
+    }
+
     //------------------------------------------------------------------------------------------------------------------
     // Positive Test Cases
     //------------------------------------------------------------------------------------------------------------------
@@ -101,5 +119,12 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
         final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .addRecipientCertificate(certificate);
+    }
+
+    @Test
+    @Parameters({"blobfish-password"})
+    public void whenNonWhitespacePasswordIsGivenNoExceptionThrown(final String password) {
+        new ContainerEncoderBuilder()
+                .setPassword(password);
     }
 }
