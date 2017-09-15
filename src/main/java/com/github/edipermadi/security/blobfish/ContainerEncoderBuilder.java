@@ -84,7 +84,7 @@ public final class ContainerEncoderBuilder {
      * @return
      */
     public ContainerEncoderBuilder addRecipientCertificate(final X509Certificate certificate) {
-        if ((certificate == null) || ("RSA".equals(certificate.getPublicKey().getAlgorithm()))) {
+        if ((certificate == null) || (!"RSA".equals(certificate.getPublicKey().getAlgorithm()))) {
             throw new IllegalArgumentException("illegal signing certificate");
         }
 

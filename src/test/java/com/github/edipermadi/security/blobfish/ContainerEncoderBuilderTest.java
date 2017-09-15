@@ -7,9 +7,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -56,13 +54,34 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
                 .setSigningCertificate(null);
     }
 
-
     @Test(expectedExceptions = IllegalArgumentException.class)
     @Parameters({"keystore-alias-enc-sender"})
-    public void whenRsaSigningCertificateIsGivenThenExceptionThrown(final String keystoreAliasEncSender) throws NoSuchAlgorithmException, KeyStoreException {
-        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keystoreAliasEncSender);
+    public void whenRsaSigningCertificateIsGivenThenExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .setSigningCertificate(certificate);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Parameters({"keystore-alias-enc-sender", "keystore-entry-password"})
+    public void whenRsaSigningPrivateKeyIsGivenThenExceptionThrown(final String alias, final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, password.toCharArray());
+        new ContainerEncoderBuilder()
+                .setSigningKey(privateKey);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenNullEncryptionCertificateIsGivenThenExceptionThrown() {
+        new ContainerEncoderBuilder()
+                .addRecipientCertificate(null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Parameters({"keystore-alias-sig-sender"})
+    public void whenEcEncryptionCertificateIsGivenThenExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+        new ContainerEncoderBuilder()
+                .addRecipientCertificate(certificate);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -70,8 +89,8 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
     //------------------------------------------------------------------------------------------------------------------
     @Test
     @Parameters({"keystore-alias-sig-sender"})
-    public void whenEcSigningCertificateIsGivenThenNoExceptionThrown(final String keystoreAliasEncSender) throws NoSuchAlgorithmException, KeyStoreException {
-        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keystoreAliasEncSender);
+    public void whenEcSigningCertificateIsGivenThenNoExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .setSigningCertificate(certificate);
     }
