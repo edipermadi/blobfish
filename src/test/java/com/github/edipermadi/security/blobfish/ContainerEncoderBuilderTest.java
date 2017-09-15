@@ -1,5 +1,6 @@
 package com.github.edipermadi.security.blobfish;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
@@ -102,6 +103,12 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
                 .setPassword("    ");
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenNullOutputStreamIsGivenThenExceptionThrown() {
+        new ContainerEncoderBuilder()
+                .setOutputStream(null);
+    }
+
     //------------------------------------------------------------------------------------------------------------------
     // Positive Test Cases
     //------------------------------------------------------------------------------------------------------------------
@@ -126,5 +133,13 @@ public final class ContainerEncoderBuilderTest extends AbstractTest {
     public void whenNonWhitespacePasswordIsGivenNoExceptionThrown(final String password) {
         new ContainerEncoderBuilder()
                 .setPassword(password);
+    }
+
+    @Test
+    public void whenNonNullOutputStreamIsGivenThenNoExceptionThrown() throws IOException {
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            new ContainerEncoderBuilder()
+                    .setOutputStream(baos);
+        }
     }
 }
