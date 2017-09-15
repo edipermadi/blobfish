@@ -124,6 +124,14 @@ final class ContainerEncoderV1 implements ContainerEncoder {
         outputStream.flush();
     }
 
+    /**
+     * Encode metadata into byte array
+     *
+     * @param path     path of blob
+     * @param tags     tags of blob
+     * @param mimeType mime-type of blob
+     * @return serialized blob metadata
+     */
     private byte[] encodeMetadata(final String path, final Set<String> tags, final String mimeType) {
         return BlobfishProto.Blobfish.Body.Metadata.newBuilder()
                 .setPath(path)
@@ -133,6 +141,17 @@ final class ContainerEncoderV1 implements ContainerEncoder {
                 .toByteArray();
     }
 
+    /**
+     * Create blob entry
+     * @param inputStream input stream to read plain blob payload
+     * @return blobfish body entry
+     * @throws IOException
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidAlgorithmParameterException
+     * @throws InvalidKeyException
+     * @throws SignatureException
+     */
     private BlobfishProto.Blobfish.Body.Entry createEntry(final InputStream inputStream) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
         /* initialize cipher */
         final byte[] ivBytes = new byte[16];
