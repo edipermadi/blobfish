@@ -72,6 +72,9 @@ public final class ContainerEncoderBuilder {
      * @return this instance
      */
     public ContainerEncoderBuilder setPassword(final String password) {
+        if ((password == null) || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("illegal password");
+        }
         this.password = password.toCharArray();
         return this;
     }
