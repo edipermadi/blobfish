@@ -1,4 +1,4 @@
-package com.github.edipermadi.security.blobfish;
+package com.github.edipermadi.security.blobfish.encoder;
 
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;

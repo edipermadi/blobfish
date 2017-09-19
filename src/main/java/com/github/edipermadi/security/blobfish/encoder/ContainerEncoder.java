@@ -1,4 +1,4 @@
-package com.github.edipermadi.security.blobfish;
+package com.github.edipermadi.security.blobfish.encoder;
 
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;

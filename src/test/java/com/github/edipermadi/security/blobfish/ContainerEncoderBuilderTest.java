@@ -1,5 +1,7 @@
 package com.github.edipermadi.security.blobfish;
 
+import com.github.edipermadi.security.blobfish.encoder.ContainerEncoder;
+import com.github.edipermadi.security.blobfish.encoder.ContainerEncoderBuilder;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;

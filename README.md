@@ -18,6 +18,7 @@ An ugly blob container based on protobuf.
 - [Container Indentification](doc/identification.md)
 - [Container Format Definition](src/main/proto/blobfish.proto)
 - [Algorithms](doc/ciphersuite.md)
+- [Exception Model](doc/exception-model.md)
 - [Usage](doc/usage.md)
 
 ## Test Resources
