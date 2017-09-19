@@ -10,4 +10,10 @@ BlobfishException
 `--BlobfishDecodeException
    |
    `--PasswordNotSupportedException
+   |
+   `--IncorrectPasswordException
+   |
+   `--InvalidDecryptionKeyException
+   |
+   `--IncorrectDecryptionKeyException
 ```
