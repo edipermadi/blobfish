@@ -5,6 +5,8 @@ Here is the exception model of Blobfish
 ```
 BlobfishException
 |
+`--BlobfishCryptoException
+|
 `--BlobfishEncodeException
 |
 `--BlobfishDecodeException

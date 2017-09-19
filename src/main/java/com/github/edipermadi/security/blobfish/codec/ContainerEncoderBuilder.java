@@ -1,4 +1,4 @@
-package com.github.edipermadi.security.blobfish.encoder;
+package com.github.edipermadi.security.blobfish.codec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;

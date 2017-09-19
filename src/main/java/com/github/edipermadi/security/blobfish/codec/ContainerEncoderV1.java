@@ -1,4 +1,4 @@
-package com.github.edipermadi.security.blobfish.encoder;
+package com.github.edipermadi.security.blobfish.codec;
 
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
@@ -7,7 +7,6 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -26,18 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Edi Permadi
  */
-final class ContainerEncoderV1 implements ContainerEncoder {
-    private static final long MAGIC_CODE = 0x75676c7966697368L;
-    private static final int VERSION_NUMBER = 1;
-    private static final int ITERATION_NUMBER = 65536;
-    private static final int KEY_LENGTH_BITS = 128;
-    private static final String KEY_DERIVATION_ALGORITHM = "PBKDF2WithHmacSHA1";
-    private static final String KEY_PROTECTION_ALGORITHM = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
-    private static final String CIPHERING_ALGORITHM = "AES/CBC/PKCS5Padding";
-    private static final String SIGNING_ALGORITHM = "SHA256withECDSA";
-    private static final String MAC_ALGORITHM = "HmacSHA256";
-    private static final String HASH_ALGORITHM = "SHA-256";
-
+final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncoder {
     private final PrivateKey signingPrivateKey;
     private final CodedOutputStream codedOutputStream;
     private final OutputStream outputStream;
@@ -58,7 +46,7 @@ final class ContainerEncoderV1 implements ContainerEncoder {
      * @throws BadPaddingException
      * @throws IllegalBlockSizeException
      */
-    ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         signingPrivateKey = builder.signingPrivateKey;
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
         outputStream = builder.outputStream;
@@ -74,15 +62,13 @@ final class ContainerEncoderV1 implements ContainerEncoder {
         /* generate key */
         final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
         if (builder.password != null) {
-            byte[] salt = new byte[32];
+            final byte[] salt = new byte[32];
             secureRandom.nextBytes(salt);
-            final PBEKeySpec spec = new PBEKeySpec(builder.password, salt, ITERATION_NUMBER, KEY_LENGTH_BITS);
-            final SecretKeyFactory factory = SecretKeyFactory.getInstance(KEY_DERIVATION_ALGORITHM);
-            keyBytes = factory.generateSecret(spec).getEncoded();
+            keyBytes = deriveKey(builder.password, salt);
 
             /* register password entry */
             headerBuilder.setPassword(BlobfishProto.Blobfish.Header.Password.newBuilder()
-                    .setIteration(ITERATION_NUMBER)
+                    .setIteration(Const.ITERATION_NUMBER)
                     .setSalt(ByteString.copyFrom(salt))
                     .build());
         } else {
@@ -127,8 +113,8 @@ final class ContainerEncoderV1 implements ContainerEncoder {
     @Override
     public void write() throws IOException {
         BlobfishProto.Blobfish.newBuilder()
-                .setMagic(MAGIC_CODE)
-                .setVersion(VERSION_NUMBER)
+                .setMagic(Const.MAGIC_CODE)
+                .setVersion(Const.VERSION_NUMBER)
                 .setBody(bodyBuilder)
                 .setHeader(headerBuilder)
                 .build()

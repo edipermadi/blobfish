@@ -1,9 +1,11 @@
-package com.github.edipermadi.security.blobfish.decoder;
+package com.github.edipermadi.security.blobfish.codec;
 
 import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.*;
 
+import java.io.IOException;
 import java.security.PrivateKey;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
@@ -43,7 +45,7 @@ public interface ContainerDecoder {
      * @throws PasswordNotSupportedException when password is not supported
      * @throws IncorrectPasswordException    when password is incorrect
      */
-    Blob getBlob(int blobId, String password) throws BlobfishDecodeException;
+    Blob getBlob(int blobId, String password) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
      * Get blob entry
