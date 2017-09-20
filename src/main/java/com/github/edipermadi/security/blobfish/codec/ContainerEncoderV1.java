@@ -1,5 +1,6 @@
 package com.github.edipermadi.security.blobfish.codec;
 
+import com.github.edipermadi.security.blobfish.exc.KeyDerivationException;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
@@ -46,7 +47,7 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
      * @throws BadPaddingException
      * @throws IllegalBlockSizeException
      */
-    ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, KeyDerivationException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         signingPrivateKey = builder.signingPrivateKey;
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
         outputStream = builder.outputStream;

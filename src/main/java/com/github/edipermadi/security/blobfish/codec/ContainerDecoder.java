@@ -3,9 +3,7 @@ package com.github.edipermadi.security.blobfish.codec;
 import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.*;
 
-import java.io.IOException;
 import java.security.PrivateKey;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
@@ -50,11 +48,12 @@ public interface ContainerDecoder {
     /**
      * Get blob entry
      *
-     * @param index         blob id from 0 to (blobCount - 1)
-     * @param decryptionKey RSA private key to decrypt blob
+     * @param index      blob id from 0 to (blobCount - 1)
+     * @param privateKey RSA private key to unprotect blob symmetric-key
+     * @param certificate  key-protection certificate
      * @return
      * @throws InvalidDecryptionKeyException   when other than RSA private key is used
      * @throws IncorrectDecryptionKeyException when decryption private key is incorrect
      */
-    Blob getBlob(int index, PrivateKey decryptionKey) throws BlobfishDecodeException;
+    Blob getBlob(int index, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 }
