@@ -1,15 +1,10 @@
 package com.github.edipermadi.security.blobfish.codec;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
+
 import java.io.OutputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +28,7 @@ public final class ContainerEncoderBuilder {
      * @param version version number
      * @return this instance
      */
-    public ContainerEncoderBuilder setVersion(int version) {
+    public ContainerEncoderBuilder setVersion(final int version) {
         if (version < 1) {
             throw new IllegalArgumentException("illegal version number");
         }
@@ -83,8 +78,8 @@ public final class ContainerEncoderBuilder {
      * Add symmetric-key certificate based protection for recipient. Passed certificate should be non-null and has
      * RSA type public-key
      *
-     * @param certificate
-     * @return
+     * @param certificate recipient certificate
+     * @return this instance
      */
     public ContainerEncoderBuilder addRecipientCertificate(final X509Certificate certificate) {
         if ((certificate == null) || (!"RSA".equals(certificate.getPublicKey().getAlgorithm()))) {
@@ -113,8 +108,9 @@ public final class ContainerEncoderBuilder {
      * Return container encoder object
      *
      * @return container object that implements {@link ContainerEncoder}
+     * @throws BlobfishCryptoException when cryptographic failure occurred
      */
-    public ContainerEncoder build() throws NoSuchPaddingException, NoSuchAlgorithmException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException {
+    public ContainerEncoder build() throws BlobfishCryptoException {
         if (signingPrivateKey == null) {
             throw new IllegalStateException("signing private-key is mandatory");
         } else if (signingCertificate == null) {

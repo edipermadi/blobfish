@@ -5,11 +5,9 @@ import com.github.edipermadi.security.blobfish.exc.*;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.*;
@@ -87,10 +85,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         }
 
         try {
-            final MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
-            md.update(certificate.getPublicKey().getEncoded());
-            final ByteString hashCertificate = ByteString.copyFrom(md.digest());
-
+            final ByteString hashCertificate = digestCertificate(certificate);
             final Cipher cipher = Cipher.getInstance(KEY_PROTECTION_ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
 
@@ -136,13 +131,10 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         final byte[] ivBytes = new byte[16];
         Arrays.fill(ivBytes, (byte) 0);
 
-        /* FIXME add impl */
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
             if (blob.getId() == blobId) {
-                final BlobfishProto.Blobfish.Body.Entry metadataEntry = blob.getMetadata();
-                final BlobfishProto.Blobfish.Body.Entry payloadEntry = blob.getPayload();
-                final byte[] decryptedMetadata = decrypt(metadataEntry.getCiphertext().toByteArray(), keyBytes, ivBytes);
-                final byte[] decryptedPayload = decrypt(payloadEntry.getCiphertext().toByteArray(), keyBytes, ivBytes);
+                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
+                final byte[] decryptedPayload = decrypt(blob.getPayload(), keyBytes, ivBytes);
                 try {
                     final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
                     final BlobfishProto.Blobfish.Body.Payload payload = BlobfishProto.Blobfish.Body.Payload.parseFrom(decryptedPayload);
@@ -179,7 +171,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
                         }
                     };
                 } catch (final InvalidProtocolBufferException ex) {
-                    throw new BlobDecryptionException(ex);
+                    throw new BlobfishDecodeException("failed to decode blob", ex);
                 }
             }
         }
@@ -187,19 +179,54 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         throw new BlobNotFoundException(blobId);
     }
 
-    /* TODO verify hmac and signature as well */
-    private byte[] decrypt(final byte[] ciphertext, final byte[] keyBytes, final byte[] ivBytes) throws BlobfishCryptoException {
+    /**
+     * Decrypt blob entry
+     *
+     * @param entry    blob entry
+     * @param keyBytes byte array of key
+     * @param ivBytes  byte array of initialization vector
+     * @return byte array of decrypted blob
+     * @throws BlobfishCryptoException when decryption failed
+     * @throws BlobfishDecodeException when decoding failed
+     */
+    private byte[] decrypt(final BlobfishProto.Blobfish.Body.Entry entry, final byte[] keyBytes, final byte[] ivBytes) throws BlobfishCryptoException, BlobfishDecodeException {
+        final byte[] ciphertext = entry.getCiphertext().toByteArray();
+        final byte[] hmac = entry.getHmac().toByteArray();
+        final byte[] signature = entry.getSignature().toByteArray();
+
         try {
-            final Cipher cipher = Cipher.getInstance(CIPHERING_ALGORITHM);
-            final SecretKeySpec cipherKeySpec = new SecretKeySpec(keyBytes, "AES");
-            final IvParameterSpec cipherIvSpec = new IvParameterSpec(ivBytes);
-            cipher.init(Cipher.ENCRYPT_MODE, cipherKeySpec, cipherIvSpec);
+            /* initialize cipher */
+            final Cipher cipher = getCipher(Cipher.DECRYPT_MODE, keyBytes, ivBytes);
+            final Mac macCalculator = getMac(keyBytes);
+
+            /* initialize signer */
+            final Signature signer = getSigner(signingCertificate);
+
+            final byte[] buffer = new byte[8192];
             try (final ByteArrayInputStream bais = new ByteArrayInputStream(ciphertext);
+                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
                  final CipherInputStream cis = new CipherInputStream(bais, cipher)) {
-                return IOUtils.toByteArray(cis);
+
+                /* decrypt, update mac-calculator and signature-verifier */
+                int r;
+                while ((r = cis.read(buffer)) != -1) {
+                    baos.write(buffer, 0, r);
+                    macCalculator.update(buffer, 0, r);
+                    signer.update(buffer, 0, r);
+                }
+
+                if (!Arrays.equals(macCalculator.doFinal(), hmac)) {
+                    throw new IncorrectDecryptionKeyException();
+                } else if (!signer.verify(signature)) {
+                    throw new NotAuthenticatedException();
+                }
+
+                return baos.toByteArray();
             }
-        } catch (final IOException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException ex) {
-            throw new BlobDecryptionException(ex);
+        } catch (final IOException ex) {
+            throw new BlobfishDecodeException("failed to decode blob", ex);
+        } catch (final SignatureException ex) {
+            throw new SignVerificationException(ex);
         }
     }
 }

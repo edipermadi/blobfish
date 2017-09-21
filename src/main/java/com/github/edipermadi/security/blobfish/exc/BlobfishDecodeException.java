@@ -5,7 +5,7 @@ package com.github.edipermadi.security.blobfish.exc;
  *
  * @author Edi Permadi
  */
-public abstract class BlobfishDecodeException extends BlobfishException {
+public class BlobfishDecodeException extends BlobfishException {
 
     /**
      * Class constructor
@@ -14,5 +14,15 @@ public abstract class BlobfishDecodeException extends BlobfishException {
      */
     public BlobfishDecodeException(final String message) {
         super(message);
+    }
+
+    /**
+     * Class constructor
+     *
+     * @param message exception message
+     * @param cause   exception cause
+     */
+    public BlobfishDecodeException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

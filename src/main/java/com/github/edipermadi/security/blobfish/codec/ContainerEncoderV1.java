@@ -1,22 +1,23 @@
 package com.github.edipermadi.security.blobfish.codec;
 
+import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
+import com.github.edipermadi.security.blobfish.exc.BlobfishEncodeException;
 import com.github.edipermadi.security.blobfish.exc.KeyDerivationException;
+import com.github.edipermadi.security.blobfish.exc.SignCalculationException;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
-import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.Mac;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.*;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,61 +40,53 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
      * Container Encoder Version 1 Constructor
      *
      * @param builder Container Encoder Builder Instance
-     * @throws CertificateEncodingException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeySpecException
-     * @throws NoSuchPaddingException
-     * @throws InvalidKeyException
-     * @throws BadPaddingException
-     * @throws IllegalBlockSizeException
+     * @throws BlobfishCryptoException when cryptographic exception occured
      */
-    ContainerEncoderV1(ContainerEncoderBuilder builder) throws CertificateEncodingException, NoSuchAlgorithmException, KeyDerivationException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+    ContainerEncoderV1(ContainerEncoderBuilder builder) throws BlobfishCryptoException {
         signingPrivateKey = builder.signingPrivateKey;
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
         outputStream = builder.outputStream;
         bodyBuilder = BlobfishProto.Blobfish.Body.newBuilder();
 
         /* create header builder */
-        headerBuilder = BlobfishProto.Blobfish.Header.newBuilder()
-                .setCreated(System.currentTimeMillis())
-                .setSender(BlobfishProto.Blobfish.Header.Sender.newBuilder()
-                        .setSigningCertificate(ByteString.copyFrom(builder.signingCertificate.getEncoded()))
+        try {
+            headerBuilder = BlobfishProto.Blobfish.Header.newBuilder()
+                    .setCreated(System.currentTimeMillis())
+                    .setSender(BlobfishProto.Blobfish.Header.Sender.newBuilder()
+                            .setSigningCertificate(encodeCertificate(builder.signingCertificate))
+                            .build());
+
+            /* generate key */
+            final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            if (builder.password != null) {
+                final byte[] salt = deriveSalt(secureRandom);
+                keyBytes = deriveKey(builder.password, salt);
+
+                /* register password entry */
+                headerBuilder.setPassword(BlobfishProto.Blobfish.Header.Password.newBuilder()
+                        .setIteration(Const.ITERATION_NUMBER)
+                        .setSalt(ByteString.copyFrom(salt))
                         .build());
+            } else {
+                keyBytes = new byte[16];
+                secureRandom.nextBytes(keyBytes);
+            }
 
-        /* generate key */
-        final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-        if (builder.password != null) {
-            final byte[] salt = new byte[32];
-            secureRandom.nextBytes(salt);
-            keyBytes = deriveKey(builder.password, salt);
-
-            /* register password entry */
-            headerBuilder.setPassword(BlobfishProto.Blobfish.Header.Password.newBuilder()
-                    .setIteration(Const.ITERATION_NUMBER)
-                    .setSalt(ByteString.copyFrom(salt))
-                    .build());
-        } else {
-            keyBytes = new byte[16];
-            secureRandom.nextBytes(keyBytes);
-        }
-
-        /* register recipients */
-        final MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
-        final Cipher cipher = Cipher.getInstance(KEY_PROTECTION_ALGORITHM);
-        for (final X509Certificate recipient : builder.recipientCertificates) {
-            cipher.init(Cipher.ENCRYPT_MODE, recipient, secureRandom);
-            md.reset();
-            md.update(recipient.getPublicKey().getEncoded());
-            headerBuilder.addRecipient(BlobfishProto.Blobfish.Header.Recipient.newBuilder()
-                    .setCipheredKey(ByteString.copyFrom(cipher.doFinal(keyBytes)))
-                    .setHashCertificate(ByteString.copyFrom(md.digest()))
-                    .build());
+            /* register recipients */
+            for (final X509Certificate recipient : builder.recipientCertificates) {
+                headerBuilder.addRecipient(BlobfishProto.Blobfish.Header.Recipient.newBuilder()
+                        .setCipheredKey(protectKey(secureRandom, keyBytes, recipient))
+                        .setHashCertificate(digestCertificate(recipient))
+                        .build());
+            }
+        } catch (final NoSuchAlgorithmException ex) {
+            throw new KeyDerivationException(ex);
         }
     }
 
     @Override
     public ContainerEncoderV1 addBlob(final String path, final Set<String> tags, final String mimeType,
-                                      final InputStream inputStream) throws IOException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, SignatureException {
+                                      final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException {
 
         final byte[] encodedMetadata = encodeMetadata(path, tags, mimeType);
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(encodedMetadata)) {
@@ -106,6 +99,8 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
                     .setPayload(payload)
                     .build();
             bodyBuilder.addBlob(blob);
+        } catch (final IOException ex) {
+            throw new BlobfishEncodeException("failed to encode blob", ex);
         }
 
         return this;
@@ -145,31 +140,18 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
      *
      * @param inputStream input stream to read plain blob payload
      * @return blobfish body entry
-     * @throws IOException
-     * @throws NoSuchPaddingException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidAlgorithmParameterException
-     * @throws InvalidKeyException
-     * @throws SignatureException
+     * @throws BlobfishCryptoException when cryptographic operation occurred
+     * @throws BlobfishEncodeException when encoding failed
      */
-    private BlobfishProto.Blobfish.Body.Entry createEntry(final InputStream inputStream) throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
+    private BlobfishProto.Blobfish.Body.Entry createEntry(final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException {
         /* initialize cipher */
         final byte[] ivBytes = new byte[16];
         Arrays.fill(ivBytes, (byte) 0);
 
-        final Cipher cipher = Cipher.getInstance(CIPHERING_ALGORITHM);
-        final SecretKeySpec cipherKeySpec = new SecretKeySpec(keyBytes, "AES");
-        final IvParameterSpec cipherIvSpec = new IvParameterSpec(ivBytes);
-        cipher.init(Cipher.ENCRYPT_MODE, cipherKeySpec, cipherIvSpec);
-
-        /* initialize MAC */
-        final SecretKeySpec macKeySpec = new SecretKeySpec(keyBytes, MAC_ALGORITHM);
-        final Mac macCalculator = Mac.getInstance(MAC_ALGORITHM);
-        macCalculator.init(macKeySpec);
-
-        /* initialize signer */
-        final Signature signer = Signature.getInstance(SIGNING_ALGORITHM);
-        signer.initSign(signingPrivateKey);
+        /* initialize cipher */
+        final Cipher cipher = getCipher(Cipher.ENCRYPT_MODE, keyBytes, ivBytes);
+        final Mac macCalculator = getMac(keyBytes);
+        final Signature signer = getSigner(signingPrivateKey);
 
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final CipherOutputStream cipherOutputStream = new CipherOutputStream(baos, cipher)) {
@@ -198,6 +180,10 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
                     .setHmac(mac)
                     .setSignature(signature)
                     .build();
+        } catch (final IOException ex) {
+            throw new BlobfishEncodeException("failed to encode blob", ex);
+        } catch (final SignatureException ex) {
+            throw new SignCalculationException(ex);
         }
     }
 }

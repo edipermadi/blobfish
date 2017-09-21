@@ -5,7 +5,7 @@ package com.github.edipermadi.security.blobfish.exc;
  *
  * @author Edi Permadi
  */
-public final class IncorrectDecryptionKeyException extends BlobfishDecodeException {
+public final class IncorrectDecryptionKeyException extends BlobfishCryptoException {
     /**
      * Class constructor
      */
