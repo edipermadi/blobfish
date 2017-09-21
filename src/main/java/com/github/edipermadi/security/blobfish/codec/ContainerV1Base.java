@@ -18,12 +18,12 @@ import java.security.spec.InvalidKeySpecException;
  * @author Edi Permadi
  */
 abstract class ContainerV1Base {
-    static final String KEY_DERIVATION_ALGORITHM = "PBKDF2WithHmacSHA1";
-    static final String KEY_PROTECTION_ALGORITHM = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
-    static final String CIPHERING_ALGORITHM = "AES/CBC/PKCS5Padding";
-    static final String SIGNING_ALGORITHM = "SHA256withECDSA";
-    static final String MAC_ALGORITHM = "HmacSHA256";
-    static final String HASH_ALGORITHM = "SHA-256";
+    private static final String KEY_DERIVATION_ALGORITHM = "PBKDF2WithHmacSHA1";
+    private static final String KEY_PROTECTION_ALGORITHM = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
+    private static final String CIPHERING_ALGORITHM = "AES/CBC/PKCS5Padding";
+    private static final String SIGNING_ALGORITHM = "SHA256withECDSA";
+    private static final String MAC_ALGORITHM = "HmacSHA256";
+    private static final String HASH_ALGORITHM = "SHA-256";
 
     /**
      * Perform PBKDF2 derivation from password
@@ -36,8 +36,7 @@ abstract class ContainerV1Base {
         try {
             final PBEKeySpec spec = new PBEKeySpec(password, salt, Const.ITERATION_NUMBER, Const.KEY_LENGTH_BITS);
             final SecretKeyFactory factory = SecretKeyFactory.getInstance(KEY_DERIVATION_ALGORITHM);
-            final byte[] key = factory.generateSecret(spec).getEncoded();
-            return key;
+            return factory.generateSecret(spec).getEncoded();
         } catch (final NoSuchAlgorithmException | InvalidKeySpecException ex) {
             throw new KeyDerivationException(ex);
         }
@@ -89,6 +88,24 @@ abstract class ContainerV1Base {
             return ByteString.copyFrom(cipher.doFinal(keyBytes));
         } catch (final NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException ex) {
             throw new KeyProtectionException(ex);
+        }
+    }
+
+    /**
+     * Unprotect key
+     *
+     * @param protectedKey byte array of protected symmetric-key
+     * @param privateKey   private key to unprotect symmetric-key
+     * @return byte array of unprotected symmetric-key
+     * @throws BlobfishCryptoException when unprotection failed
+     */
+    byte[] unprotectKey(final byte[] protectedKey, final PrivateKey privateKey) throws BlobfishCryptoException {
+        try {
+            final Cipher cipher = Cipher.getInstance(KEY_PROTECTION_ALGORITHM);
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            return cipher.doFinal(protectedKey);
+        } catch (final NoSuchAlgorithmException | BadPaddingException | IllegalBlockSizeException | NoSuchPaddingException | InvalidKeyException ex) {
+            throw new KeyUnprotectionException(ex);
         }
     }
 

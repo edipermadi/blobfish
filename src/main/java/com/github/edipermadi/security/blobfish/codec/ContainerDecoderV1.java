@@ -7,10 +7,14 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.Mac;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.security.*;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -84,22 +88,15 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new IllegalArgumentException("unexpected private key type");
         }
 
-        try {
-            final ByteString hashCertificate = digestCertificate(certificate);
-            final Cipher cipher = Cipher.getInstance(KEY_PROTECTION_ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, privateKey);
-
-            for (final BlobfishProto.Blobfish.Header.Recipient recipient : blobFish.getHeader().getRecipientList()) {
-                if (hashCertificate.equals(recipient.getHashCertificate())) {
-                    final byte[] key = cipher.doFinal(recipient.getCipheredKey().toByteArray());
-                    return getBlob(index, key);
-                }
+        final ByteString hashCertificate = digestCertificate(certificate);
+        for (final BlobfishProto.Blobfish.Header.Recipient recipient : blobFish.getHeader().getRecipientList()) {
+            if (hashCertificate.equals(recipient.getHashCertificate())) {
+                final byte[] key = unprotectKey(recipient.getCipheredKey().toByteArray(), privateKey);
+                return getBlob(index, key);
             }
-
-            throw new InvalidDecryptionKeyException();
-        } catch (final NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | BadPaddingException | IllegalBlockSizeException ex) {
-            throw new KeyUnprotectionException(ex);
         }
+
+        throw new InvalidDecryptionKeyException();
     }
 
     /**
