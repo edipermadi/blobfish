@@ -41,7 +41,7 @@ public final class ContainerDecoderBuilder {
             throw new IllegalStateException("input stream is required");
         }
 
-        final BlobfishProto.Blobfish blobFish = BlobfishProto.Blobfish.parseDelimitedFrom(inputStream);
+        final BlobfishProto.Blobfish blobFish = BlobfishProto.Blobfish.parseFrom(inputStream);
         if (blobFish.getMagic() != Const.MAGIC_CODE) {
             throw new IllegalStateException("unexpected magic code");
         }
