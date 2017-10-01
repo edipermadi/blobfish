@@ -10,6 +10,7 @@
     <parameter name="keystore-alias-enc-receiver1" value="enc.receiver1"/>
     <parameter name="keystore-alias-enc-receiver2" value="enc.receiver2"/>
     <parameter name="blobfish-password" value="7h15!5p@55w0rd"/>
+    <parameter name="blobfish-path" value="target/output.ugly"/>
 
     <parameter name="image1" value="src/test/resources/amused.png"/>
     <parameter name="image2" value="src/test/resources/annoyed.png"/>

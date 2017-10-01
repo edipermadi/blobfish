@@ -15,6 +15,12 @@ import java.security.cert.CertificateException;
 public final class ContainerDecoderBuilder {
     private InputStream inputStream;
 
+    /**
+     * Set decoder input stream
+     *
+     * @param inputStream container input stream
+     * @return this instance
+     */
     public ContainerDecoderBuilder setInputStream(final InputStream inputStream) {
         if (inputStream == null) {
             throw new IllegalArgumentException("input stream is null");
@@ -23,6 +29,13 @@ public final class ContainerDecoderBuilder {
         return this;
     }
 
+    /**
+     * Build container decoder
+     *
+     * @return container decoder object
+     * @throws IOException          when container reading failed
+     * @throws CertificateException when sender certificate cannot be retrieved from container
+     */
     public ContainerDecoder build() throws IOException, CertificateException {
         if (inputStream == null) {
             throw new IllegalStateException("input stream is required");
@@ -33,7 +46,7 @@ public final class ContainerDecoderBuilder {
             throw new IllegalStateException("unexpected magic code");
         }
 
-        switch (blobFish.getVersion()){
+        switch (blobFish.getVersion()) {
             case 1:
                 return new ContainerDecoderV1(blobFish);
             default:

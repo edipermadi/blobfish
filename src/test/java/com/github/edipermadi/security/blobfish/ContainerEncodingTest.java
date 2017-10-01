@@ -337,7 +337,8 @@ public final class ContainerEncodingTest extends AbstractTest {
             "image4",
             "image5",
             "image6",
-            "image7"})
+            "image7",
+            "blobfish-path"})
     @Test
     public void testEncode(final String entryPassword,
                            final String senderSigningAlias,
@@ -351,12 +352,13 @@ public final class ContainerEncodingTest extends AbstractTest {
                            final String path4,
                            final String path5,
                            final String path6,
-                           final String path7) throws BlobfishCryptoException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, BlobfishEncodeException {
+                           final String path7,
+                           final String containerPath) throws BlobfishCryptoException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, BlobfishEncodeException {
         final Set<String> tags = new HashSet<>();
         tags.add("fish");
         tags.add("deep-sea");
 
-        final File file = new File("target/output.ugly");
+        final File file = new File(containerPath);
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
