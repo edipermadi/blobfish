@@ -186,12 +186,14 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
             cipherOutputStream.flush();
             cipherOutputStream.close();
 
-            final ByteString encrypted = ByteString.copyFrom(baos.toByteArray());
+            /* wrap ciphertext, mac and signature*/
+            final ByteString ciphertext = ByteString.copyFrom(baos.toByteArray());
             final ByteString mac = ByteString.copyFrom(macCalculator.doFinal());
             final ByteString signature = ByteString.copyFrom(signer.sign());
 
+            /* encode entry */
             return BlobfishProto.Blobfish.Body.Entry.newBuilder()
-                    .setCiphertext(encrypted)
+                    .setCiphertext(ciphertext)
                     .setHmac(mac)
                     .setSignature(signature)
                     .build();
