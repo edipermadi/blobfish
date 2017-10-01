@@ -40,18 +40,15 @@ public final class ContainerEncodingTest extends AbstractTest {
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
     public void beforeClass(final String keystoreFilePath, final String keystoreFilePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException, TikaException {
-        log("setting up tika");
         this.tika = new TikaConfig();
 
         log("using keystore file path     : %s", keystoreFilePath);
         log("using keystore file password : %s", keystoreFilePassword);
 
-        log("loading keystore");
         this.keyStore = KeyStore.getInstance("JKS");
         try (final FileInputStream fis = new FileInputStream(new File(keystoreFilePath))) {
             keyStore.load(fis, keystoreFilePassword.toCharArray());
         }
-        log("keystore loaded");
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -385,8 +382,6 @@ public final class ContainerEncodingTest extends AbstractTest {
             encoder.write();
 
             log("created blob at %s", file.getAbsolutePath());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
