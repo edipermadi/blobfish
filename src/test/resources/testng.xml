@@ -21,7 +21,7 @@
 
     <test name="ContainerEncoderBuilder Test">
         <classes>
-            <class name="com.github.edipermadi.security.blobfish.ContainerEncoderBuilderTest"/>
+            <class name="com.github.edipermadi.security.blobfish.ContainerEncodingTest"/>
         </classes>
     </test>
 </suite>

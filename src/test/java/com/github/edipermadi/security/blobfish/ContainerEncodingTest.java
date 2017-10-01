@@ -33,7 +33,7 @@ import java.util.Set;
  *
  * @author Edi Permadi
  */
-public final class ContainerEncoderBuilderTest extends AbstractTest {
+public final class ContainerEncodingTest extends AbstractTest {
     private KeyStore keyStore;
     private TikaConfig tika;
 
