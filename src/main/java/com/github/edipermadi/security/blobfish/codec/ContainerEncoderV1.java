@@ -31,7 +31,7 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
     private final PrivateKey signingPrivateKey;
     private final CodedOutputStream codedOutputStream;
     private byte[] keyBytes;
-    private final AtomicInteger counter = new AtomicInteger(1);
+    private final AtomicInteger counter = new AtomicInteger(0);
     private final BlobfishProto.Blobfish.Body.Builder bodyBuilder;
     private final BlobfishProto.Blobfish.Header.Builder headerBuilder;
 
