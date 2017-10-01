@@ -7,19 +7,39 @@ BlobfishException
 |
 `--BlobfishCryptoException
 |  |
+|  `--CertificateHashingException
+|  |
+|  `--CertificateSerializationException
+|  |
+|  `--CipherSetupException
+|  |
+|  `--KeyDerivationException
+|  |
 |  `--MacSetupException
 |  |
 |  `--SignerSetupException
 |
 `--BlobfishEncodeException
+|  |
+|  `--KeyProtectionException
+|  |
+|  `--SignCalculationException
 |
 `--BlobfishDecodeException
    |
-   `--PasswordNotSupportedException
+   `--BlobNotFoundException
+   |
+   `--KeyUnprotectionException
+   |
+   `--IncorrectDecryptionKeyException
    |
    `--IncorrectPasswordException
    |
    `--InvalidDecryptionKeyException
    |
-   `--IncorrectDecryptionKeyException
+   `--NotAuthenticatedException
+   |
+   `--PasswordNotSupportedException
+   |
+   `--SignVerificationException
 ```

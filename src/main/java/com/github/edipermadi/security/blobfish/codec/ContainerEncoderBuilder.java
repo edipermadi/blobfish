@@ -1,6 +1,7 @@
 package com.github.edipermadi.security.blobfish.codec;
 
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
+import com.github.edipermadi.security.blobfish.exc.BlobfishEncodeException;
 
 import java.io.OutputStream;
 import java.security.PrivateKey;
@@ -109,8 +110,9 @@ public final class ContainerEncoderBuilder {
      *
      * @return container object that implements {@link ContainerEncoder}
      * @throws BlobfishCryptoException when cryptographic failure occurred
+     * @throws BlobfishEncodeException when encoding processing failed
      */
-    public ContainerEncoder build() throws BlobfishCryptoException {
+    public ContainerEncoder build() throws BlobfishCryptoException, BlobfishEncodeException {
         if (signingPrivateKey == null) {
             throw new IllegalStateException("signing private-key is mandatory");
         } else if (signingCertificate == null) {

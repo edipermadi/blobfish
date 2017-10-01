@@ -5,7 +5,7 @@ package com.github.edipermadi.security.blobfish.exc;
  *
  * @author Edi Permadi
  */
-public final class KeyProtectionException extends BlobfishCryptoException {
+public final class KeyProtectionException extends BlobfishEncodeException {
     /**
      * Class constructor
      *

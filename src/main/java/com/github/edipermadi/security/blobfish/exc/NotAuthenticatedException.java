@@ -5,7 +5,7 @@ package com.github.edipermadi.security.blobfish.exc;
  *
  * @author Edi Permadi
  */
-public final class NotAuthenticatedException extends BlobfishCryptoException {
+public final class NotAuthenticatedException extends BlobfishDecodeException {
     /**
      * Class constructor
      */

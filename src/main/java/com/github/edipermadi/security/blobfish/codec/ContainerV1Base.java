@@ -79,9 +79,9 @@ abstract class ContainerV1Base {
      * @param keyBytes     symmetric key to be protected
      * @param certificate  symmetric-key protection certificate
      * @return byte string of protected symmetric key
-     * @throws BlobfishCryptoException when key protection failed
+     * @throws KeyProtectionException when key protection failed
      */
-    ByteString protectKey(final SecureRandom secureRandom, final byte[] keyBytes, final X509Certificate certificate) throws BlobfishCryptoException {
+    ByteString protectKey(final SecureRandom secureRandom, final byte[] keyBytes, final X509Certificate certificate) throws BlobfishEncodeException {
         try {
             final Cipher cipher = Cipher.getInstance(KEY_PROTECTION_ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, certificate, secureRandom);
@@ -97,9 +97,9 @@ abstract class ContainerV1Base {
      * @param protectedKey byte array of protected symmetric-key
      * @param privateKey   private key to unprotect symmetric-key
      * @return byte array of unprotected symmetric-key
-     * @throws BlobfishCryptoException when unprotection failed
+     * @throws KeyUnprotectionException when unprotection failed
      */
-    byte[] unprotectKey(final byte[] protectedKey, final PrivateKey privateKey) throws BlobfishCryptoException {
+    byte[] unprotectKey(final byte[] protectedKey, final PrivateKey privateKey) throws BlobfishDecodeException {
         try {
             final Cipher cipher = Cipher.getInstance(KEY_PROTECTION_ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, privateKey);

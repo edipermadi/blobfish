@@ -39,9 +39,10 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
      * Container Encoder Version 1 Constructor
      *
      * @param builder Container Encoder Builder Instance
-     * @throws BlobfishCryptoException when cryptographic exception occured
+     * @throws BlobfishCryptoException when cryptographic exception occurred
+     * @throws BlobfishEncodeException whn encoding exception occurred
      */
-    ContainerEncoderV1(ContainerEncoderBuilder builder) throws BlobfishCryptoException {
+    ContainerEncoderV1(ContainerEncoderBuilder builder) throws BlobfishCryptoException, BlobfishEncodeException {
         signingPrivateKey = builder.signingPrivateKey;
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
         bodyBuilder = BlobfishProto.Blobfish.Body.newBuilder();

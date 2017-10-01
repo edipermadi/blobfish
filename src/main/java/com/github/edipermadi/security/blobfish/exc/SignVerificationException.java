@@ -5,7 +5,7 @@ package com.github.edipermadi.security.blobfish.exc;
  *
  * @author Edi Permadi
  */
-public final class SignVerificationException extends BlobfishCryptoException {
+public final class SignVerificationException extends BlobfishDecodeException {
     /**
      * Class constructor
      *
