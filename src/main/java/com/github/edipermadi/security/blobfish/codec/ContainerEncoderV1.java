@@ -7,6 +7,7 @@ import com.github.edipermadi.security.blobfish.exc.SignCalculationException;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.crypto.Cipher;
@@ -15,7 +16,6 @@ import javax.crypto.Mac;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncoder {
     private final PrivateKey signingPrivateKey;
     private final CodedOutputStream codedOutputStream;
-    private final OutputStream outputStream;
     private byte[] keyBytes;
     private final AtomicInteger counter = new AtomicInteger(1);
     private final BlobfishProto.Blobfish.Body.Builder bodyBuilder;
@@ -45,7 +44,6 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
     ContainerEncoderV1(ContainerEncoderBuilder builder) throws BlobfishCryptoException {
         signingPrivateKey = builder.signingPrivateKey;
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
-        outputStream = builder.outputStream;
         bodyBuilder = BlobfishProto.Blobfish.Body.newBuilder();
 
         /* create header builder */
@@ -86,12 +84,18 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
 
     @Override
     public ContainerEncoderV1 addBlob(final String path, final Set<String> tags, final String mimeType,
-                                      final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException {
-
+                                      final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException, IOException {
+        /* encode metadata and payload */
         final byte[] encodedMetadata = encodeMetadata(path, tags, mimeType);
-        try (final ByteArrayInputStream bais = new ByteArrayInputStream(encodedMetadata)) {
-            final BlobfishProto.Blobfish.Body.Entry metadata = createEntry(bais);
-            final BlobfishProto.Blobfish.Body.Entry payload = createEntry(inputStream);
+        final byte[] encodedPayload = encodePayload(inputStream);
+
+        try (final ByteArrayInputStream bais1 = new ByteArrayInputStream(encodedMetadata);
+             final ByteArrayInputStream bais2 = new ByteArrayInputStream(encodedPayload)) {
+
+            /* create entries */
+            final BlobfishProto.Blobfish.Body.Entry metadata = createEntry(bais1);
+            final BlobfishProto.Blobfish.Body.Entry payload = createEntry(bais2);
+
             final int id = counter.getAndIncrement();
             final BlobfishProto.Blobfish.Body.Blob blob = BlobfishProto.Blobfish.Body.Blob.newBuilder()
                     .setId(id)
@@ -136,6 +140,21 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
     }
 
     /**
+     * Encode payload
+     *
+     * @param inputStream input stream of payload
+     * @return byte array of encoded payload
+     * @throws IOException when encoding failed
+     */
+    private byte[] encodePayload(final InputStream inputStream) throws IOException {
+        final byte[] payload = IOUtils.toByteArray(inputStream);
+        return BlobfishProto.Blobfish.Body.Payload.newBuilder()
+                .setData(ByteString.copyFrom(payload))
+                .build()
+                .toByteArray();
+    }
+
+    /**
      * Create blob entry
      *
      * @param inputStream input stream to read plain blob payload
@@ -165,18 +184,14 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
                 signer.update(buffer, 0, r);
             }
             cipherOutputStream.flush();
+            cipherOutputStream.close();
 
-
+            final ByteString encrypted = ByteString.copyFrom(baos.toByteArray());
             final ByteString mac = ByteString.copyFrom(macCalculator.doFinal());
             final ByteString signature = ByteString.copyFrom(signer.sign());
-            final ByteString ciphertext = BlobfishProto.Blobfish.Body.Payload
-                    .newBuilder()
-                    .setData(ByteString.copyFrom(baos.toByteArray()))
-                    .build()
-                    .toByteString();
 
             return BlobfishProto.Blobfish.Body.Entry.newBuilder()
-                    .setCiphertext(ciphertext)
+                    .setCiphertext(encrypted)
                     .setHmac(mac)
                     .setSignature(signature)
                     .build();

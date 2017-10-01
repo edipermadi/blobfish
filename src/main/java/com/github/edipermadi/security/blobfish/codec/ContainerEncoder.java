@@ -29,7 +29,7 @@ public interface ContainerEncoder {
      * @throws BlobfishEncodeException when encoding failed
      * @throws BlobfishCryptoException when encryption failed
      */
-    ContainerEncoderV1 addBlob(String path, Set<String> tags, String mimeType, InputStream inputStream) throws BlobfishEncodeException, BlobfishCryptoException;
+    ContainerEncoderV1 addBlob(String path, Set<String> tags, String mimeType, InputStream inputStream) throws BlobfishEncodeException, BlobfishCryptoException, IOException;
 
     /**
      * Write blobs to output-stream given by {@link ContainerEncoderBuilder}

@@ -130,9 +130,12 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
             if (blob.getId() == blobId) {
+                /* decrypt metadata and payload */
                 final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
                 final byte[] decryptedPayload = decrypt(blob.getPayload(), keyBytes, ivBytes);
+
                 try {
+                    /* parse decrypted metadata and payload */
                     final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
                     final BlobfishProto.Blobfish.Body.Payload payload = BlobfishProto.Blobfish.Body.Payload.parseFrom(decryptedPayload);
 
