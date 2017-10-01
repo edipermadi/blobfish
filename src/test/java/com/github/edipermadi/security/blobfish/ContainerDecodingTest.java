@@ -80,7 +80,7 @@ public final class ContainerDecodingTest extends AbstractTest {
                 final Blob.Metadata metadata = blob.getMetadata();
                 Reporter.log(String.format("path      = %s", metadata.getPath()), true);
                 Reporter.log(String.format("mime-type = %s", metadata.getMimeType()), true);
-                Reporter.log(String.format("tags = %s", Joiner.on(", ").join(metadata.getTags(), ", ")), true);
+                Reporter.log(String.format("tags = %s", Joiner.on(", ").join(metadata.getTags())), true);
 
                 /* write to file */
                 final File outputFile = new File(String.format("target/%s", new File(metadata.getPath()).getName()));
