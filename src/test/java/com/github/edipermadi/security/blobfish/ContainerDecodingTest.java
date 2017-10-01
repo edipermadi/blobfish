@@ -42,12 +42,13 @@ public final class ContainerDecodingTest extends AbstractTest {
     @Parameters({"blobfish-path", "blobfish-password"})
     @Test
     public void testDecodeByPassword(final String blobfishPath, final String blobfishPassword) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException {
+        Reporter.log("testDecodeByPassword", true);
         final File file = new File(blobfishPath);
         try (final FileInputStream fis = new FileInputStream(file)) {
             final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
                     .setInputStream(fis)
                     .build();
-            final Blob blob = containerDecoder.getBlob(0, blobfishPassword);
+            final Blob blob = containerDecoder.getBlob(1, blobfishPassword);
             final Blob.Metadata metadata = blob.getMetadata();
             Reporter.log(String.format("path      = %s", metadata.getPath()), true);
             Reporter.log(String.format("mime-type = %s", metadata.getMimeType()), true);

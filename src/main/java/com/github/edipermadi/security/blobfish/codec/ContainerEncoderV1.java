@@ -115,7 +115,7 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
                 .setHeader(headerBuilder)
                 .build()
                 .writeTo(codedOutputStream);
-        outputStream.flush();
+        codedOutputStream.flush();
     }
 
     /**

@@ -60,11 +60,11 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
     @Override
     public Blob getBlob(final int blobId, final String password) throws BlobfishDecodeException, BlobfishCryptoException {
-        if ((password == null) || password.isEmpty()) {
+        if (blobId < 0) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        } else if ((password == null) || password.isEmpty()) {
             throw new IllegalArgumentException("password is null/empty");
-        }
-
-        if (!blobFish.getHeader().hasPassword()) {
+        } else if (!blobFish.getHeader().hasPassword()) {
             throw new PasswordNotSupportedException();
         }
 
