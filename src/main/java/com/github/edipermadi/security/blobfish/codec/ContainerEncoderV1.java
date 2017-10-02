@@ -19,8 +19,11 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * Container Encoder Version 1
@@ -135,7 +138,7 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
         return BlobfishProto.Blobfish.Body.Metadata.newBuilder()
                 .setPath(path)
                 .setMimeType(mimeType)
-                .addAllTags(tags)
+                .addAllTags(filterTags(tags))
                 .build()
                 .toByteArray();
     }
@@ -203,5 +206,20 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
         } catch (final SignatureException ex) {
             throw new SignCalculationException(ex);
         }
+    }
+
+    /**
+     * Convert tags to lowercase
+     *
+     * @param tags source tags
+     * @return converted tags
+     */
+    private Set<String> filterTags(final Set<String> tags) {
+        final Set<String> result = new HashSet<>();
+        for (final String tag : tags) {
+            result.add(tag.toLowerCase());
+        }
+
+        return result;
     }
 }
