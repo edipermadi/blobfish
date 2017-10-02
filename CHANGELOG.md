@@ -8,6 +8,7 @@
 - Generate source-jar while building package
 - Added error_prone checking
 - Tags forced to lowercase during encoding
+- List available tags
 
 ## v1.0.0 [October 1, 2017]
 
