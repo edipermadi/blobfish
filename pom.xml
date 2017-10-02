@@ -201,7 +201,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <excludePackageNames>com.github.edipermadi.security.blobfish.generated.*</excludePackageNames>
+                    <sourceFileExcludes>
+                        <sourceFileExclude>
+                            **/com/github/edipermadi/security/blobfish/generated/*.java
+                        </sourceFileExclude>
+                    </sourceFileExcludes>
                 </configuration>
             </plugin>
 

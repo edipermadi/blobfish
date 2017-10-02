@@ -11,7 +11,7 @@ public interface Blob {
     /**
      * Get blob metadata
      *
-     * @return
+     * @return metadata object, see {@link Metadata}
      */
     Metadata getMetadata();
 
@@ -28,10 +28,25 @@ public interface Blob {
      * @author Edi Permadi
      */
     interface Metadata {
+        /**
+         * Get blob path
+         *
+         * @return string of blob path
+         */
         String getPath();
 
+        /**
+         * Get blob tags
+         *
+         * @return set of blob tags (in lower case)
+         */
         Set<String> getTags();
 
+        /**
+         * Blob mime-type hint
+         *
+         * @return string of mime-type detected while encoding
+         */
         String getMimeType();
     }
 }

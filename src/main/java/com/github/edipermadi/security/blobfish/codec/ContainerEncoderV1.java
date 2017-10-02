@@ -20,10 +20,8 @@ import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 /**
  * Container Encoder Version 1
