@@ -21,6 +21,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Container Decoding Unit Test
@@ -175,6 +176,57 @@ public final class ContainerDecodingTest extends AbstractTest {
                     final String actual = DigestUtils.sha256Hex(blob.getPayload());
                     Assert.assertEquals(actual, reference);
                 }
+            }
+        }
+    }
+
+    @Parameters({"blobfish-path",
+            "blobfish-password"})
+    @Test
+    public void testGetTagsByPassword(final String blobfishPath,
+                                      final String blobfishPassword) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException {
+        Reporter.log("testGetTagsByPassword", true);
+        final File containerFile = new File(blobfishPath);
+
+        try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
+
+            final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
+                    .setInputStream(containerFis)
+                    .build();
+            final Set<String> tags = containerDecoder.getTags(blobfishPassword);
+            Assert.assertNotNull(tags);
+            Reporter.log(String.format("found tags = %s", Joiner.on(", ").join(tags)), true);
+        }
+    }
+
+    @Parameters({"blobfish-path",
+            "keystore-entry-password",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test
+    public void testGetTagsByPrivateKey(final String blobfishPath,
+                                        final String keyStoreEntryPassword,
+                                        final String receiverAlias1,
+                                        final String receiverAlias2,
+                                        final String receiverAlias3) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
+        Reporter.log("testGetTagsByPrivateKey", true);
+        final File containerFile = new File(blobfishPath);
+        final List<String> aliases = Arrays.asList(receiverAlias1, receiverAlias2, receiverAlias3);
+
+        for (final String alias : aliases) {
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyStoreEntryPassword.toCharArray());
+
+            try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
+
+                final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
+                        .setInputStream(containerFis)
+                        .build();
+
+                final Set<String> tags = containerDecoder.getTags(certificate, privateKey);
+                Assert.assertNotNull(tags);
+                Reporter.log(String.format("found tags = %s", Joiner.on(", ").join(tags)), true);
             }
         }
     }

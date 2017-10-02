@@ -99,6 +99,79 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         throw new InvalidDecryptionKeyException();
     }
 
+    @Override
+    public Set<String> getTags(final String password) throws BlobfishCryptoException, BlobfishDecodeException {
+        final Set<String> result = new HashSet<>();
+
+        try {
+            /* derive symmetric-key from password */
+            final byte[] salt = blobFish.getHeader()
+                    .getPassword()
+                    .getSalt()
+                    .toByteArray();
+            final byte[] key = deriveKey(password.toCharArray(), salt);
+
+            /* initialize cipher */
+            final byte[] ivBytes = new byte[16];
+            Arrays.fill(ivBytes, (byte) 0);
+
+            for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
+                /* decrypt metadata */
+                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), key, ivBytes);
+
+                /* parse decrypted metadata */
+                final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
+                for (final String tag : metadata.getTagsList()) {
+                    result.add(tag.toLowerCase());
+                }
+            }
+        } catch (InvalidProtocolBufferException ex) {
+            throw new BlobfishDecodeException("failed to decode blob", ex);
+        }
+
+        return result;
+    }
+
+    @Override
+    public Set<String> getTags(X509Certificate certificate, PrivateKey privateKey) throws BlobfishCryptoException, BlobfishDecodeException {
+        final Set<String> result = new HashSet<>();
+
+        try {
+            byte[] key = null;
+            final ByteString hashCertificate = digestCertificate(certificate);
+            for (final BlobfishProto.Blobfish.Header.Recipient recipient : blobFish.getHeader().getRecipientList()) {
+                if (hashCertificate.equals(recipient.getHashCertificate())) {
+                    key = unprotectKey(recipient.getCipheredKey().toByteArray(), privateKey);
+                    break;
+                }
+            }
+
+            /* throw when certificate does not match any */
+            if (key == null) {
+                throw new InvalidDecryptionKeyException();
+            }
+
+            /* initialize cipher */
+            final byte[] ivBytes = new byte[16];
+            Arrays.fill(ivBytes, (byte) 0);
+
+            for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
+                /* decrypt metadata */
+                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), key, ivBytes);
+
+                /* parse decrypted metadata */
+                final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
+                for (final String tag : metadata.getTagsList()) {
+                    result.add(tag.toLowerCase());
+                }
+            }
+        } catch (InvalidProtocolBufferException ex) {
+            throw new BlobfishDecodeException("failed to decode blob", ex);
+        }
+
+        return result;
+    }
+
     /**
      * Decode sender signing certificate
      *

@@ -7,6 +7,7 @@ import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * Blobfish container decoder interface
@@ -57,4 +58,25 @@ public interface ContainerDecoder {
      * @throws BlobfishCryptoException when cryptographic processing failed
      */
     Blob getBlob(int index, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get all tags from container
+     *
+     * @param password password to open container
+     * @return set of tags recovered from container
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     * @throws BlobfishDecodeException when container decoding failed
+     */
+    Set<String> getTags(String password) throws BlobfishCryptoException, BlobfishDecodeException;
+
+    /**
+     * Get all tags container
+     *
+     * @param certificate certificate to identify correct protected-key entry
+     * @param privateKey  private key to decrypt protected-key entry
+     * @return set of tags recovered from container
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     * @throws BlobfishDecodeException when container decoding failed
+     */
+    Set<String> getTags(X509Certificate certificate, PrivateKey privateKey) throws BlobfishCryptoException, BlobfishDecodeException;
 }
