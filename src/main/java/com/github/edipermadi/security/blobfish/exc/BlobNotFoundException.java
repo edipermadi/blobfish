@@ -14,4 +14,13 @@ public final class BlobNotFoundException extends BlobfishDecodeException {
     public BlobNotFoundException(int blobId) {
         super("no such blob with id " + blobId);
     }
+
+    /**
+     * Class constructor
+     *
+     * @param path blob path
+     */
+    public BlobNotFoundException(final String path) {
+        super("no such blob at path '" + path + "'");
+    }
 }

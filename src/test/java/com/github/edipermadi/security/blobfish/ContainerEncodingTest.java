@@ -4,6 +4,7 @@ import com.github.edipermadi.security.blobfish.codec.ContainerEncoder;
 import com.github.edipermadi.security.blobfish.codec.ContainerEncoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishEncodeException;
+import org.apache.commons.io.input.NullInputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
@@ -11,14 +12,14 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.Reporter;
+import org.testng.annotations.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
@@ -49,6 +50,18 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final FileInputStream fis = new FileInputStream(new File(keystoreFilePath))) {
             keyStore.load(fis, keystoreFilePassword.toCharArray());
         }
+    }
+
+    @BeforeMethod
+    public void beforeMethod(final Method method) {
+        Reporter.log("========================================", true);
+        Reporter.log(method.getName(), true);
+        Reporter.log("========================================", true);
+    }
+
+    @AfterMethod
+    public void afterMethod() {
+        Reporter.log("", true);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -230,6 +243,279 @@ public final class ContainerEncodingTest extends AbstractTest {
         }
     }
 
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenPathIsNullThenAddingBlobThrowsException(final String entryPassword,
+                                                            final String senderSigningAlias,
+                                                            final String senderEncryptionAlias,
+                                                            final String recipient1EncryptionAlias,
+                                                            final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = null;
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = "application/octet-stream";
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenPathIsEmptyThenAddingBlobThrowsException(final String entryPassword,
+                                                             final String senderSigningAlias,
+                                                             final String senderEncryptionAlias,
+                                                             final String recipient1EncryptionAlias,
+                                                             final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "";
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = "application/octet-stream";
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenPathIsNotAbsoluteThenAddingBlobThrowsException(final String entryPassword,
+                                                                   final String senderSigningAlias,
+                                                                   final String senderEncryptionAlias,
+                                                                   final String recipient1EncryptionAlias,
+                                                                   final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "media/blob";
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = "application/octet-stream";
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenPathIsDirectoryThenAddingBlobThrowsException(final String entryPassword,
+                                                                 final String senderSigningAlias,
+                                                                 final String senderEncryptionAlias,
+                                                                 final String recipient1EncryptionAlias,
+                                                                 final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "/media/blob/";
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = "application/octet-stream";
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenTagsIsNullThenAddingBlobThrowsException(final String entryPassword,
+                                                            final String senderSigningAlias,
+                                                            final String senderEncryptionAlias,
+                                                            final String recipient1EncryptionAlias,
+                                                            final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "/media/blob";
+            final Set<String> tags = null;
+            final String mimeType = "application/octet-stream";
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenMimeTypeIsNullThenAddingBlobThrowsException(final String entryPassword,
+                                                                final String senderSigningAlias,
+                                                                final String senderEncryptionAlias,
+                                                                final String recipient1EncryptionAlias,
+                                                                final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "/media/blob";
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = null;
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenMimeTypeIsEmptyThenAddingBlobThrowsException(final String entryPassword,
+                                                                 final String senderSigningAlias,
+                                                                 final String senderEncryptionAlias,
+                                                                 final String recipient1EncryptionAlias,
+                                                                 final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final NullInputStream nis = new NullInputStream(1024)) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "/media/blob";
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = "";
+            encoder.addBlob(path, tags, mimeType, nis);
+        }
+    }
+
+
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void whenInputStreamIsNullThenAddingBlobThrowsException(final String entryPassword,
+                                                                   final String senderSigningAlias,
+                                                                   final String senderEncryptionAlias,
+                                                                   final String recipient1EncryptionAlias,
+                                                                   final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setOutputStream(baos)
+                    .build();
+
+            final String path = "/media/blob";
+            final Set<String> tags = new HashSet<>();
+            final String mimeType = "";
+            encoder.addBlob(path, tags, mimeType, null);
+        }
+    }
+
+
     //------------------------------------------------------------------------------------------------------------------
     // Positive Test Cases
     //------------------------------------------------------------------------------------------------------------------
@@ -396,7 +682,7 @@ public final class ContainerEncodingTest extends AbstractTest {
 
         try (final FileInputStream fis = new FileInputStream(file)) {
             final MediaType type = tika.getDetector().detect(TikaInputStream.get(Paths.get(path)), metadata);
-            encoder.addBlob(path, tags, type.toString(), fis);
+            encoder.addBlob(file.getAbsolutePath(), tags, type.toString(), fis);
         }
     }
 }

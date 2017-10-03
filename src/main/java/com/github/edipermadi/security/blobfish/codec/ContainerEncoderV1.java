@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -86,6 +87,16 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
     @Override
     public ContainerEncoderV1 addBlob(final String path, final Set<String> tags, final String mimeType,
                                       final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException, IOException {
+        if ((path == null) || path.isEmpty() || path.endsWith("/") || !path.startsWith("/")) {
+            throw new IllegalArgumentException("illegal path");
+        } else if (tags == null) {
+            throw new IllegalArgumentException("tags is null");
+        } else if ((mimeType == null) || mimeType.isEmpty()) {
+            throw new IllegalArgumentException("mimetype is null/empty");
+        } else if (inputStream == null) {
+            throw new IllegalArgumentException("input-stream is null/empty");
+        }
+
         /* encode metadata and payload */
         final byte[] encodedMetadata = encodeMetadata(path, tags, mimeType);
         final byte[] encodedPayload = encodePayload(inputStream);
@@ -135,7 +146,7 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
         return BlobfishProto.Blobfish.Body.Metadata.newBuilder()
                 .setPath(path)
                 .setMimeType(mimeType)
-                .addAllTags(tags)
+                .addAllTags(filterTags(tags))
                 .build()
                 .toByteArray();
     }
@@ -203,5 +214,20 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
         } catch (final SignatureException ex) {
             throw new SignCalculationException(ex);
         }
+    }
+
+    /**
+     * Convert tags to lowercase
+     *
+     * @param tags source tags
+     * @return converted tags
+     */
+    private Set<String> filterTags(final Set<String> tags) {
+        final Set<String> result = new HashSet<>();
+        for (final String tag : tags) {
+            result.add(tag.toLowerCase());
+        }
+
+        return result;
     }
 }

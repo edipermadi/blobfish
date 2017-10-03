@@ -3,13 +3,8 @@ package com.github.edipermadi.security.blobfish.codec;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishEncodeException;
 
-import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.Set;
 
 /**
@@ -28,6 +23,7 @@ public interface ContainerEncoder {
      * @return this object
      * @throws BlobfishEncodeException when encoding failed
      * @throws BlobfishCryptoException when encryption failed
+     * @throws IOException when reading plain blob failed
      */
     ContainerEncoderV1 addBlob(String path, Set<String> tags, String mimeType, InputStream inputStream) throws BlobfishEncodeException, BlobfishCryptoException, IOException;
 
