@@ -10,7 +10,8 @@
 - Tags forced to lowercase during encoding
 - List available tags
 - List directory
-- Get blob by path
+- Get blob by id/path
+- Get blob metadata by id/path
 
 ## v1.0.0 [October 1, 2017]
 

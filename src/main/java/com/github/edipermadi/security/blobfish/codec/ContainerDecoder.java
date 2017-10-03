@@ -37,7 +37,53 @@ public interface ContainerDecoder {
     Date getCreationDate();
 
     /**
-     * Get blob entry by blobId
+     * Get blob metadata by password and blobId
+     *
+     * @param blobId   blob id from 0 to (blobCount - 1)
+     * @param password password to open
+     * @return blob metadata object
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Blob.Metadata getMetadata(int blobId, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob metadata by password and path
+     *
+     * @param path     blob path
+     * @param password password to open
+     * @return blob metadata object
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Blob.Metadata getMetadata(String path, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob metadata by privateKey and blobId
+     *
+     * @param blobId      blob id from 0 to (blobCount - 1)
+     * @param privateKey  RSA private key to unprotect blob symmetric-key
+     * @param certificate key-protection certificate
+     * @return blob metadata object
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Blob.Metadata getMetadata(int blobId, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob metadata by privateKey and path
+     *
+     * @param path        blob path
+     * @param privateKey  RSA private key to unprotect blob symmetric-key
+     * @param certificate key-protection certificate
+     * @return blob metadata object
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Blob.Metadata getMetadata(String path, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob entry by password and blobId
      *
      * @param blobId   blob id from 0 to (blobCount - 1)
      * @param password password to open
@@ -48,7 +94,7 @@ public interface ContainerDecoder {
     Blob getBlob(int blobId, String password) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
-     * Get blob entry by path
+     * Get blob entry by password and path
      *
      * @param path     blob path
      * @param password password to open
@@ -59,24 +105,24 @@ public interface ContainerDecoder {
     Blob getBlob(String path, String password) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
-     * Get blob entry by blobId
+     * Get blob entry by privateKey and blobId
      *
      * @param blobId      blob id from 0 to (blobCount - 1)
      * @param privateKey  RSA private key to unprotect blob symmetric-key
      * @param certificate key-protection certificate
-     * @return blob object
+     * @return decrypted blob entry, see {@link Blob}
      * @throws BlobfishDecodeException when container decoding failed
      * @throws BlobfishCryptoException when cryptographic processing failed
      */
     Blob getBlob(int blobId, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
-     * Get blob entry by path
+     * Get blob entry by privateKey and path
      *
      * @param path        blob path
      * @param privateKey  RSA private key to unprotect blob symmetric-key
      * @param certificate key-protection certificate
-     * @return blob object
+     * @return decrypted blob entry, see {@link Blob}
      * @throws BlobfishDecodeException when container decoding failed
      * @throws BlobfishCryptoException when cryptographic processing failed
      */
