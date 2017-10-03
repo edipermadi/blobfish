@@ -12,6 +12,7 @@
 - List directory
 - Get blob by id/path
 - Get blob metadata by id/path
+- Get blob payload by id/path
 
 ## v1.0.0 [October 1, 2017]
 

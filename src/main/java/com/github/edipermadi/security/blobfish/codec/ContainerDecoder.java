@@ -83,6 +83,52 @@ public interface ContainerDecoder {
     Blob.Metadata getMetadata(String path, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
+     * Get blob payload by password and blobId
+     *
+     * @param blobId   blob id from 0 to (blobCount - 1)
+     * @param password password to open
+     * @return decrypted blob payload
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    byte[] getPayload(int blobId, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob payload by password and path
+     *
+     * @param path     blob path
+     * @param password password to open
+     * @return decrypted blob payload
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    byte[] getPayload(String path, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob payload by privateKey and blobId
+     *
+     * @param blobId      blob id from 0 to (blobCount - 1)
+     * @param privateKey  RSA private key to unprotect blob symmetric-key
+     * @param certificate key-protection certificate
+     * @return decrypted blob payload
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    byte[] getPayload(int blobId, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob payload by privateKey and path
+     *
+     * @param path        blob path
+     * @param privateKey  RSA private key to unprotect blob symmetric-key
+     * @param certificate key-protection certificate
+     * @return decrypted blob payload
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    byte[] getPayload(String path, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
      * Get blob entry by password and blobId
      *
      * @param blobId   blob id from 0 to (blobCount - 1)
