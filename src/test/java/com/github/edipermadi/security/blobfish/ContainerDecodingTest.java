@@ -8,14 +8,13 @@ import com.google.common.base.Joiner;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.testng.Assert;
 import org.testng.Reporter;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -33,7 +32,8 @@ public final class ContainerDecodingTest extends AbstractTest {
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
-    public void beforeClass(final String keystoreFilePath, final String keystoreFilePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+    public void beforeClass(final String keystoreFilePath, final String keystoreFilePassword) throws KeyStoreException,
+            IOException, CertificateException, NoSuchAlgorithmException {
 
         log("using keystore file path     : %s", keystoreFilePath);
         log("using keystore file password : %s", keystoreFilePassword);
@@ -42,6 +42,18 @@ public final class ContainerDecodingTest extends AbstractTest {
         try (final FileInputStream fis = new FileInputStream(new File(keystoreFilePath))) {
             keyStore.load(fis, keystoreFilePassword.toCharArray());
         }
+    }
+
+    @BeforeMethod
+    public void beforeMethod(final Method method) {
+        Reporter.log("========================================", true);
+        Reporter.log(method.getName(), true);
+        Reporter.log("========================================", true);
+    }
+
+    @AfterMethod
+    public void afterMethod() {
+        Reporter.log("", true);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -81,7 +93,8 @@ public final class ContainerDecodingTest extends AbstractTest {
                                      final String path4,
                                      final String path5,
                                      final String path6,
-                                     final String path7) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException {
+                                     final String path7) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException {
         Reporter.log("testDecodeByPassword", true);
         final List<String> plainPaths = Arrays.asList(path1, path2, path3, path4, path5, path6, path7);
         final File containerFile = new File(blobfishPath);
@@ -97,13 +110,14 @@ public final class ContainerDecodingTest extends AbstractTest {
                         .build();
                 final Blob blob = containerDecoder.getBlob(blobId, blobfishPassword);
                 final Blob.Metadata metadata = blob.getMetadata();
-                Reporter.log(String.format("path      = %s", metadata.getPath()), true);
-                Reporter.log(String.format("mime-type = %s", metadata.getMimeType()), true);
-                Reporter.log(String.format("tags = %s", Joiner.on(", ").join(metadata.getTags())), true);
+                Reporter.log("found blob:");
+                Reporter.log(String.format("  path      = %s", metadata.getPath()), true);
+                Reporter.log(String.format("  mime-type = %s", metadata.getMimeType()), true);
+                Reporter.log(String.format("  tags = %s", Joiner.on(", ").join(metadata.getTags())), true);
 
                 /* write to file */
                 final File outputFile = new File(String.format("target/%s", new File(metadata.getPath()).getName()));
-                Reporter.log("writing to " + outputFile.getAbsolutePath(), true);
+                Reporter.log("  writing to " + outputFile.getAbsolutePath(), true);
                 try (final FileOutputStream fos = new FileOutputStream(outputFile)) {
                     fos.write(blob.getPayload());
                 }
@@ -139,7 +153,9 @@ public final class ContainerDecodingTest extends AbstractTest {
                                        final String path4,
                                        final String path5,
                                        final String path6,
-                                       final String path7) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+                                       final String path7) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException, UnrecoverableKeyException, NoSuchAlgorithmException,
+            KeyStoreException {
         Reporter.log("testDecodeByPrivateKey", true);
         final List<String> aliases = Arrays.asList(receiverAlias1, receiverAlias2, receiverAlias3);
         final List<String> plainPaths = Arrays.asList(path1, path2, path3, path4, path5, path6, path7);
@@ -149,6 +165,7 @@ public final class ContainerDecodingTest extends AbstractTest {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
             final PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyStoreEntryPassword.toCharArray());
 
+            Reporter.log(String.format("decrypting with alias '%s'", alias), true);
             for (int blobId = 0; blobId < plainPaths.size(); blobId++) {
                 final File plainFile = new File(plainPaths.get(blobId));
 
@@ -161,13 +178,15 @@ public final class ContainerDecodingTest extends AbstractTest {
 
                     final Blob blob = containerDecoder.getBlob(blobId, certificate, privateKey);
                     final Blob.Metadata metadata = blob.getMetadata();
-                    Reporter.log(String.format("path      = %s", metadata.getPath()), true);
-                    Reporter.log(String.format("mime-type = %s", metadata.getMimeType()), true);
-                    Reporter.log(String.format("tags = %s", Joiner.on(", ").join(metadata.getTags())), true);
+
+                    Reporter.log("  found blob:", true);
+                    Reporter.log(String.format("    path      = %s", metadata.getPath()), true);
+                    Reporter.log(String.format("    mime-type = %s", metadata.getMimeType()), true);
+                    Reporter.log(String.format("    tags = %s", Joiner.on(", ").join(metadata.getTags())), true);
 
                     /* write to file */
                     final File outputFile = new File(String.format("target/%s", new File(metadata.getPath()).getName()));
-                    Reporter.log("writing to " + outputFile.getAbsolutePath(), true);
+                    Reporter.log("    writing to " + outputFile.getAbsolutePath(), true);
                     try (final FileOutputStream fos = new FileOutputStream(outputFile)) {
                         fos.write(blob.getPayload());
                     }
@@ -184,18 +203,19 @@ public final class ContainerDecodingTest extends AbstractTest {
             "blobfish-password"})
     @Test
     public void testGetTagsByPassword(final String blobfishPath,
-                                      final String blobfishPassword) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException {
+                                      final String blobfishPassword) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException {
         Reporter.log("testGetTagsByPassword", true);
         final File containerFile = new File(blobfishPath);
 
         try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
-
+            Reporter.log("decoding with password");
             final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
                     .setInputStream(containerFis)
                     .build();
             final Set<String> tags = containerDecoder.getTags(blobfishPassword);
             Assert.assertNotNull(tags);
-            Reporter.log(String.format("found tags = %s", Joiner.on(", ").join(tags)), true);
+            Reporter.log(String.format("  found tags = %s", Joiner.on(", ").join(tags)), true);
         }
     }
 
@@ -209,12 +229,14 @@ public final class ContainerDecodingTest extends AbstractTest {
                                         final String keyStoreEntryPassword,
                                         final String receiverAlias1,
                                         final String receiverAlias2,
-                                        final String receiverAlias3) throws IOException, CertificateException, BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
-        Reporter.log("testGetTagsByPrivateKey", true);
+                                        final String receiverAlias3) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException,
+            NoSuchAlgorithmException {
         final File containerFile = new File(blobfishPath);
         final List<String> aliases = Arrays.asList(receiverAlias1, receiverAlias2, receiverAlias3);
 
         for (final String alias : aliases) {
+            Reporter.log(String.format("decoding with alias '%s'", alias), true);
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
             final PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyStoreEntryPassword.toCharArray());
 
@@ -226,7 +248,71 @@ public final class ContainerDecodingTest extends AbstractTest {
 
                 final Set<String> tags = containerDecoder.getTags(certificate, privateKey);
                 Assert.assertNotNull(tags);
-                Reporter.log(String.format("found tags = %s", Joiner.on(", ").join(tags)), true);
+                Reporter.log(String.format("  found tags = %s", Joiner.on(", ").join(tags)), true);
+            }
+        }
+    }
+
+    @Parameters({"blobfish-path",
+            "blobfish-password"})
+    @Test
+    public void testListDirectoryByPassword(final String blobfishPath,
+                                            final String blobfishPassword) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException {
+        final File containerFile = new File(blobfishPath);
+
+        Reporter.log("decoding with password", true);
+        try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
+            final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
+                    .setInputStream(containerFis)
+                    .build();
+            final Set<String> entries = containerDecoder.listDirectory("/", blobfishPassword);
+            Assert.assertNotNull(entries);
+            for (final String entry : entries) {
+                if (entry.endsWith("/")) {
+                    Reporter.log(String.format("  found directory : %s", entry), true);
+                } else {
+                    Reporter.log(String.format("  found blob      : %s", entry), true);
+                }
+            }
+        }
+    }
+
+    @Parameters({"blobfish-path",
+            "keystore-entry-password",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test
+    public void testListDirectoryByPrivateKey(final String blobfishPath,
+                                              final String keyStoreEntryPassword,
+                                              final String receiverAlias1,
+                                              final String receiverAlias2,
+                                              final String receiverAlias3) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
+        final File containerFile = new File(blobfishPath);
+        final List<String> aliases = Arrays.asList(receiverAlias1, receiverAlias2, receiverAlias3);
+
+        for (final String alias : aliases) {
+            Reporter.log(String.format("decoding with alias '%s'", alias), true);
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyStoreEntryPassword.toCharArray());
+
+            try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
+
+                final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
+                        .setInputStream(containerFis)
+                        .build();
+
+                final Set<String> entries = containerDecoder.listDirectory("/", certificate, privateKey);
+                Assert.assertNotNull(entries);
+                for (final String entry : entries) {
+                    if (entry.endsWith("/")) {
+                        Reporter.log(String.format("  found directory : %s", entry), true);
+                    } else {
+                        Reporter.log(String.format("  found blob      : %s", entry), true);
+                    }
+                }
             }
         }
     }

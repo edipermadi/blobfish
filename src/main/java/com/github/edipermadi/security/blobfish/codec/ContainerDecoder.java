@@ -50,14 +50,14 @@ public interface ContainerDecoder {
     /**
      * Get blob entry
      *
-     * @param index       blob id from 0 to (blobCount - 1)
+     * @param blobId      blob id from 0 to (blobCount - 1)
      * @param privateKey  RSA private key to unprotect blob symmetric-key
      * @param certificate key-protection certificate
      * @return blob object
      * @throws BlobfishDecodeException when container decoding failed
      * @throws BlobfishCryptoException when cryptographic processing failed
      */
-    Blob getBlob(int index, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+    Blob getBlob(int blobId, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
      * Get all tags from container
@@ -79,4 +79,27 @@ public interface ContainerDecoder {
      * @throws BlobfishDecodeException when container decoding failed
      */
     Set<String> getTags(X509Certificate certificate, PrivateKey privateKey) throws BlobfishCryptoException, BlobfishDecodeException;
+
+    /**
+     * List childs (blob/directory) within given path
+     *
+     * @param path     path to look for. Path starts with `/` and ends with `/`
+     * @param password to unlock container
+     * @return set of directory/blob within given path. Directories ends with `/`
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Set<String> listDirectory(String path, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * List childs (blob/directory) within given path
+     *
+     * @param path        path to look for. Path starts with `/` and ends with `/`
+     * @param certificate certificate to identify correct protected-key entry
+     * @param privateKey  private key to decrypt protected-key entry
+     * @return set of directory/blob within given path. Directories ends with `/`
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Set<String> listDirectory(String path, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 }
