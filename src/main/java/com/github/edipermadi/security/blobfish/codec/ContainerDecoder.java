@@ -37,7 +37,7 @@ public interface ContainerDecoder {
     Date getCreationDate();
 
     /**
-     * Get blob entry
+     * Get blob entry by blobId
      *
      * @param blobId   blob id from 0 to (blobCount - 1)
      * @param password password to open
@@ -48,7 +48,18 @@ public interface ContainerDecoder {
     Blob getBlob(int blobId, String password) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
-     * Get blob entry
+     * Get blob entry by path
+     *
+     * @param path     blob path
+     * @param password password to open
+     * @return decrypted blob entry, see {@link Blob}
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Blob getBlob(String path, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob entry by blobId
      *
      * @param blobId      blob id from 0 to (blobCount - 1)
      * @param privateKey  RSA private key to unprotect blob symmetric-key
@@ -58,6 +69,18 @@ public interface ContainerDecoder {
      * @throws BlobfishCryptoException when cryptographic processing failed
      */
     Blob getBlob(int blobId, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blob entry by path
+     *
+     * @param path        blob path
+     * @param privateKey  RSA private key to unprotect blob symmetric-key
+     * @param certificate key-protection certificate
+     * @return blob object
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     */
+    Blob getBlob(String path, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 
     /**
      * Get all tags from container
