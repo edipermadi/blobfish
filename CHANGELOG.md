@@ -1,6 +1,6 @@
 # Blobfish Changelog
 
-## v1.1.1-SNAPSHOT
+## v1.1.0 [October 4, 2017]
 
 **New Features**
 
