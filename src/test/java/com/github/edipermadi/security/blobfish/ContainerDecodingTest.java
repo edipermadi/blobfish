@@ -387,29 +387,15 @@ public final class ContainerDecodingTest extends AbstractTest {
         for (final String plainPath : plainPaths) {
             final File plainFile = new File(plainPath);
 
-            try (final FileInputStream containerFis = new FileInputStream(containerFile);
-                 final FileInputStream plainFis = new FileInputStream(plainFile)) {
-
+            try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
                 final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
                         .setInputStream(containerFis)
                         .build();
-                final Blob blob = containerDecoder.getBlob(plainFile.getAbsolutePath(), blobfishPassword);
-                final Blob.Metadata metadata = blob.getMetadata();
+                final Blob.Metadata metadata = containerDecoder.getMetadata(plainFile.getAbsolutePath(), blobfishPassword);
                 Reporter.log("  found metadata:");
                 Reporter.log(String.format("    path      = %s", metadata.getPath()), true);
                 Reporter.log(String.format("    mime-type = %s", metadata.getMimeType()), true);
                 Reporter.log(String.format("    tags = %s", Joiner.on(", ").join(metadata.getTags())), true);
-
-                /* write to file */
-                final File outputFile = new File(String.format("target/%s", new File(metadata.getPath()).getName()));
-                Reporter.log("  writing to " + outputFile.getAbsolutePath(), true);
-                try (final FileOutputStream fos = new FileOutputStream(outputFile)) {
-                    fos.write(blob.getPayload());
-                }
-
-                final String reference = DigestUtils.sha256Hex(plainFis);
-                final String actual = DigestUtils.sha256Hex(blob.getPayload());
-                Assert.assertEquals(actual, reference);
             }
         }
     }
