@@ -5,6 +5,7 @@ import com.github.edipermadi.security.blobfish.exc.*;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.ProtocolStringList;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.crypto.Cipher;
@@ -477,6 +478,71 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         }
     }
 
+    @Override
+    public Set<String> listByTags(final Set<String> tags, final String password) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (tags == null) {
+            throw new IllegalArgumentException("tags is null");
+        } else if (tags.isEmpty()) {
+            throw new IllegalArgumentException("tags is empty");
+        } else if (password == null) {
+            throw new IllegalArgumentException("password is null");
+        } else if (password.isEmpty()) {
+            throw new IllegalArgumentException("password ie empty");
+        } else if (!blobFish.getHeader().hasPassword()) {
+            throw new PasswordNotSupportedException();
+        }
+
+        try {
+            /* derive symmetric-key from password */
+            final byte[] salt = blobFish.getHeader()
+                    .getPassword()
+                    .getSalt()
+                    .toByteArray();
+            final byte[] key = deriveKey(password.toCharArray(), salt);
+
+            return listByTags(tags, key);
+        } catch (final InvalidProtocolBufferException ex) {
+            throw new BlobfishDecodeException("failed to decode blob", ex);
+        }
+    }
+
+    @Override
+    public Set<String> listByTags(final Set<String> tags, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (tags == null) {
+            throw new IllegalArgumentException("tags is null");
+        } else if (tags.isEmpty()) {
+            throw new IllegalArgumentException("tags is empty");
+        } else if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equalsIgnoreCase(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
+        } else if (privateKey == null) {
+            throw new IllegalArgumentException("privateKey is null");
+        } else if (!"RSA".equalsIgnoreCase(privateKey.getAlgorithm())) {
+            throw new IllegalArgumentException("invalid privateKey type");
+        }
+
+        try {
+            byte[] key = null;
+            final ByteString hashCertificate = digestCertificate(certificate);
+            for (final BlobfishProto.Blobfish.Header.Recipient recipient : blobFish.getHeader().getRecipientList()) {
+                if (hashCertificate.equals(recipient.getHashCertificate())) {
+                    key = unprotectKey(recipient.getCipheredKey().toByteArray(), privateKey);
+                    break;
+                }
+            }
+
+            /* throw when certificate does not match any */
+            if (key == null) {
+                throw new InvalidDecryptionKeyException();
+            }
+
+            return listByTags(tags, key);
+        } catch (final InvalidProtocolBufferException ex) {
+            throw new BlobfishDecodeException("failed to decode blob", ex);
+        }
+    }
+
     /**
      * Decode sender signing certificate
      *
@@ -750,15 +816,6 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         throw new BlobNotFoundException(path);
     }
 
-    /**
-     * Get blob tags from container
-     *
-     * @param key key to unlock container
-     * @return set of tags
-     * @throws BlobfishDecodeException        when decoding failed
-     * @throws BlobfishCryptoException        when decryption, hmac or signature verification failed
-     * @throws InvalidProtocolBufferException when payload deformed
-     */
     private Set<String> getTags(final byte[] key) throws BlobfishDecodeException, BlobfishCryptoException, InvalidProtocolBufferException {
         final Set<String> result = new HashSet<>();
 
@@ -780,16 +837,6 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         return result;
     }
 
-    /**
-     * List content of directory
-     *
-     * @param path path to look for
-     * @param key  key to unlock container
-     * @return set of tags
-     * @throws BlobfishDecodeException        when decoding failed
-     * @throws BlobfishCryptoException        when decryption, hmac or signature verification failed
-     * @throws InvalidProtocolBufferException when payload deformed
-     */
     private Set<String> listDirectory(final String path, final byte[] key) throws BlobfishDecodeException, BlobfishCryptoException, InvalidProtocolBufferException {
         final Set<String> result = new HashSet<>();
 
@@ -816,16 +863,32 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         return result;
     }
 
-    /**
-     * Decrypt blob entry
-     *
-     * @param entry    blob entry
-     * @param keyBytes byte array of key
-     * @param ivBytes  byte array of initialization vector
-     * @return byte array of decrypted blob
-     * @throws BlobfishCryptoException when decryption failed
-     * @throws BlobfishDecodeException when decoding failed
-     */
+    private Set<String> listByTags(final Set<String> tags, final byte[] key) throws BlobfishDecodeException, BlobfishCryptoException, InvalidProtocolBufferException {
+        final Set<String> result = new HashSet<>();
+
+        /* initialize cipher */
+        final byte[] ivBytes = new byte[16];
+        Arrays.fill(ivBytes, (byte) 0);
+
+        final String pattern = Pattern.quote(System.getProperty("file.separator"));
+        for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
+            /* decrypt metadata */
+            final byte[] decryptedMetadata = decrypt(blob.getMetadata(), key, ivBytes);
+
+            /* parse decrypted metadata */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
+            final ProtocolStringList blobTags = metadata.getTagsList();
+            for (final String tag : tags) {
+                if (blobTags.contains(tag)) {
+                    result.add(metadata.getPath());
+                    continue;
+                }
+            }
+        }
+
+        return result;
+    }
+
     private byte[] decrypt(final BlobfishProto.Blobfish.Body.Entry entry, final byte[] keyBytes, final byte[] ivBytes) throws BlobfishCryptoException, BlobfishDecodeException {
         final byte[] ciphertext = entry.getCiphertext().toByteArray();
         final byte[] hmac = entry.getHmac().toByteArray();

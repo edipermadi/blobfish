@@ -217,4 +217,27 @@ public interface ContainerDecoder {
      * @throws BlobfishCryptoException when cryptographic processing failed
      */
     Set<String> listDirectory(String path, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * List blob path by tag
+     *
+     * @param tags     filtering tags, blob will included if at least one tag match
+     * @param password password to unlock container
+     * @return set of blob path
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     * @throws BlobfishDecodeException when container decoding failed
+     */
+    Set<String> listByTags(Set<String> tags, String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * List blob path by tag
+     *
+     * @param tags        filtering tags, blob will included if at least one tag match
+     * @param certificate certificate to identify correct protected-key entry
+     * @param privateKey  private key to decrypt protected-key entry
+     * @return set of blob path
+     * @throws BlobfishCryptoException when cryptographic processing failed
+     * @throws BlobfishDecodeException when container decoding failed
+     */
+    Set<String> listByTags(Set<String> tags, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 }

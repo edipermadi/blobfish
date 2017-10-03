@@ -18,10 +18,7 @@ import java.lang.reflect.Method;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Container Decoding Unit Test
@@ -869,6 +866,66 @@ public final class ContainerDecodingTest extends AbstractTest {
                     } else {
                         Reporter.log(String.format("  found blob      : %s", entry), true);
                     }
+                }
+            }
+        }
+    }
+
+    @Parameters({"blobfish-path",
+            "blobfish-password"})
+    @Test
+    public void testListByTagsWithPassword(final String blobfishPath,
+                                           final String blobfishPassword) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException {
+        final File containerFile = new File(blobfishPath);
+        final Set<String> tags = new HashSet<>();
+
+        tags.add("fish");
+        Reporter.log("listing blob by tag with password", true);
+        try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
+
+            final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
+                    .setInputStream(containerFis)
+                    .build();
+            final Set<String> paths = containerDecoder.listByTags(tags, blobfishPassword);
+            for (final String path : paths) {
+                Reporter.log("found blob path: " + path, true);
+            }
+        }
+    }
+
+    @Parameters({"blobfish-path",
+            "keystore-entry-password",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2"})
+    @Test
+    public void testListByTagsWithPrivateKey(final String blobfishPath,
+                                        final String keyStoreEntryPassword,
+                                        final String receiverAlias1,
+                                        final String receiverAlias2,
+                                        final String receiverAlias3) throws IOException, CertificateException,
+            BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException,
+            NoSuchAlgorithmException {
+        final File containerFile = new File(blobfishPath);
+        final Set<String> tags = new HashSet<>();
+        final List<String> aliases = Arrays.asList(receiverAlias1, receiverAlias2, receiverAlias3);
+
+        tags.add("fish");
+        for (final String alias : aliases) {
+            Reporter.log(String.format("listing blob by tags with alias '%s'", alias), true);
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyStoreEntryPassword.toCharArray());
+
+            try (final FileInputStream containerFis = new FileInputStream(containerFile)) {
+
+                final ContainerDecoder containerDecoder = new ContainerDecoderBuilder()
+                        .setInputStream(containerFis)
+                        .build();
+
+                final Set<String> paths = containerDecoder.listByTags(tags, certificate, privateKey);
+                for (final String path : paths) {
+                    Reporter.log("  found blob path: " + path, true);
                 }
             }
         }
