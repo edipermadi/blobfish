@@ -49,6 +49,8 @@ public final class ContainerDecoderBuilder {
         switch (blobFish.getVersion()) {
             case 1:
                 return new ContainerDecoderV1(blobFish);
+            case 2:
+                return new ContainerDecoderV2(blobFish);
             default:
                 throw new IllegalStateException("unsupported container version");
         }

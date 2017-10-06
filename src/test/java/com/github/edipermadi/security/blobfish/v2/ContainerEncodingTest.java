@@ -1,5 +1,6 @@
-package com.github.edipermadi.security.blobfish;
+package com.github.edipermadi.security.blobfish.v2;
 
+import com.github.edipermadi.security.blobfish.AbstractTest;
 import com.github.edipermadi.security.blobfish.codec.ContainerEncoder;
 import com.github.edipermadi.security.blobfish.codec.ContainerEncoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
@@ -18,7 +19,10 @@ import org.testng.annotations.*;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.security.*;
@@ -37,6 +41,7 @@ import java.util.Set;
 public final class ContainerEncodingTest extends AbstractTest {
     private KeyStore keyStore;
     private TikaConfig tika;
+    private static final int BLOB_VERSION =2;
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
@@ -156,6 +161,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
                     .addRecipientCertificate(recipient1EncryptionCertificate)
@@ -185,6 +191,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .addRecipientCertificate(senderEncryptionCertificate)
                     .addRecipientCertificate(recipient1EncryptionCertificate)
@@ -214,6 +221,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         new ContainerEncoderBuilder()
+                .setVersion(BLOB_VERSION)
                 .setSigningKey(privateKey)
                 .setSigningCertificate(senderSigningCertificate)
                 .addRecipientCertificate(senderEncryptionCertificate)
@@ -262,6 +270,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -296,6 +305,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -330,6 +340,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -364,6 +375,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -398,6 +410,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -432,6 +445,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -466,6 +480,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final NullInputStream nis = new NullInputStream(1024)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -500,6 +515,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -568,6 +584,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -599,6 +616,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)
@@ -624,7 +642,7 @@ public final class ContainerEncodingTest extends AbstractTest {
             "image5",
             "image6",
             "image7",
-            "blobfish-path"})
+            "blobfish-path-v2"})
     @Test
     public void testEncode(final String entryPassword,
                            final String senderSigningAlias,
@@ -652,6 +670,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
         try (final FileOutputStream fos = new FileOutputStream(file)) {
             final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setVersion(BLOB_VERSION)
                     .setSigningKey(privateKey)
                     .setSigningCertificate(senderSigningCertificate)
                     .addRecipientCertificate(senderEncryptionCertificate)

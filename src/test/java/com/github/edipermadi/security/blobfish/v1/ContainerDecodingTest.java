@@ -1,5 +1,7 @@
-package com.github.edipermadi.security.blobfish;
+package com.github.edipermadi.security.blobfish.v1;
 
+import com.github.edipermadi.security.blobfish.AbstractTest;
+import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.codec.ContainerDecoder;
 import com.github.edipermadi.security.blobfish.codec.ContainerDecoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
@@ -73,7 +75,7 @@ public final class ContainerDecodingTest extends AbstractTest {
     // Positive Test Cases
     //------------------------------------------------------------------------------------------------------------------
 
-    @Parameters({"blobfish-path"})
+    @Parameters({"blobfish-path-v1"})
     @Test
     public void testGetBlobCount(final String blobfishPath) throws IOException, CertificateException,
             BlobfishDecodeException, BlobfishCryptoException {
@@ -89,7 +91,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path"})
+    @Parameters({"blobfish-path-v1"})
     @Test
     public void testGetCreationDate(final String blobfishPath) throws IOException, CertificateException,
             BlobfishDecodeException, BlobfishCryptoException {
@@ -105,7 +107,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path"})
+    @Parameters({"blobfish-path-v1"})
     @Test
     public void testGetSigningCertificate(final String blobfishPath) throws IOException, CertificateException,
             BlobfishDecodeException, BlobfishCryptoException {
@@ -121,7 +123,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password",
             "image1",
             "image2",
@@ -175,7 +177,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password",
             "image1",
             "image2",
@@ -229,7 +231,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -298,7 +300,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -367,7 +369,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password",
             "image1",
             "image2",
@@ -406,7 +408,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password",
             "image1",
             "image2",
@@ -446,7 +448,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -500,7 +502,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -556,7 +558,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password",
             "image1",
             "image2",
@@ -599,7 +601,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password",
             "image1",
             "image2",
@@ -642,7 +644,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -698,7 +700,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -754,7 +756,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password"})
     @Test
     public void testGetTagsByPassword(final String blobfishPath,
@@ -773,7 +775,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -807,7 +809,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password"})
     @Test
     public void testListDirectoryByPassword(final String blobfishPath,
@@ -832,7 +834,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
@@ -871,7 +873,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "blobfish-password"})
     @Test
     public void testListByTagsWithPassword(final String blobfishPath,
@@ -894,7 +896,7 @@ public final class ContainerDecodingTest extends AbstractTest {
         }
     }
 
-    @Parameters({"blobfish-path",
+    @Parameters({"blobfish-path-v1",
             "keystore-entry-password",
             "keystore-alias-enc-sender",
             "keystore-alias-enc-receiver1",
