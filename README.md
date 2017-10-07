@@ -14,11 +14,16 @@ An ugly blob container based on protobuf. The project is meant to be an educatio
 - [x] Public key based symmetric-key protection for recipient
 - [x] Optional PBKDF2 based key protection
 - [x] Blob compression (GZIP)
-- [x] Simulated Directory Listing
-- Blob Querying
+- [x] Simulated Directory Listing 
+- [x] Blob Querying
     - [x] By Id
     - [x] By Path
     - [x] By Tag
+- [ ] BlobPool, a mutable intermediate container
+    - [ ] Import from blobfish container
+    - [ ] Export to blobfish container
+    - [ ] Recipient CRUD access
+    - [ ] Bob CRUD access
 
 ## Documentation
 - [Container Indentification](doc/identification.md)
