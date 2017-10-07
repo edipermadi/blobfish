@@ -4,21 +4,29 @@
 An ugly blob container based on protobuf. The project is meant to be an educational PGP-Like tamper-proof file container.
 
 ## Features
-- [x] Versioned container
-- [x] Multiple blob container
-- [x] Blob mimetype indicator
-- [x] Blob HMAC and signature
-- [x] Blob encryption
-- [x] Blob Tagging
-- [x] Blob location path (simulates storage tree view)
-- [x] Public key based symmetric-key protection for recipient
-- [x] Optional PBKDF2 based key protection
-- [x] Blob compression (GZIP)
-- [x] Simulated Directory Listing 
-- [x] Blob Querying
-    - [x] By Id
-    - [x] By Path
-    - [x] By Tag
+- [x] Container Features
+    - [x] Versioned container
+    - [x] Multiple blob support
+    - [x] Multiple recipient support
+- [x] Content Features
+    - [x] Blob compression (GZIP)
+    - [x] Blob protection (Encryption)
+    - [x] Integrity checking (HMAC)
+    - [x] Authenticity checking (ECDSA signature)
+    - [X] Blob mimetype indicator
+    - [x] Blob tagging
+    - [x] Blob location path (simulates FS hierarchy)
+- [x] Key-Management Features
+    - [x] multiple RSA-OAEP symmetric-key protection
+    - [ ] Multiple PBKDF2 based symmetric key protection
+    - [x] Optional PBKDF2 based master-symmetric-key derivation
+- [x] Blob Discovery Features
+    - [x] Tag listing
+    - [x] Directory listing
+    - [x] Open plob by Id
+    - [x] Open plob by path
+    - [x] List blob by tags
+    - [x] List blob by partial/full path
 - [ ] BlobPool, a mutable intermediate container
     - [ ] Import from blobfish container
     - [ ] Export to blobfish container
