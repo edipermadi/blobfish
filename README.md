@@ -25,6 +25,10 @@ An ugly blob container based on protobuf. The project is meant to be an educatio
     - [ ] Recipient CRUD access
     - [ ] Bob CRUD access
 
+## Blobfish Random Facts
+- [The Ugliest Animal](https://www.theguardian.com/environment/2013/sep/12/blobfish-world-ugliest-animal)
+- [Blobby the Blobfish](http://thelastblobfish.tumblr.com/) 
+
 ## Documentation
 - [Container Indentification](doc/identification.md)
 - [Container Format Definition](src/main/proto/blobfish.proto)
