@@ -42,6 +42,7 @@ An ugly blob container based on protobuf. The project is meant to be an educatio
 - [Container Format Definition](src/main/proto/blobfish.proto)
 - [Algorithms](doc/ciphersuite.md)
 - [Exception Model](doc/exception-model.md)
+- [Database](doc/database.md)
 - [Usage](doc/usage.md)
 
 ## Test Resources
