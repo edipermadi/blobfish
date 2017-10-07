@@ -1,18 +1,24 @@
 # blobfish
 
 ## Overview
-An ugly blob container based on protobuf.
+An ugly blob container based on protobuf. The project is meant to be an educational PGP-Like tamper-proof file container.
 
 ## Features
-- Versioned container
-- Multiple blob container
-- Blob mimetype indicator
-- Blob HMAC and signature
-- Blob encryption
-- Blob Tagging
-- Blob location path (simulates storage tree view)
-- Public key based symmetric-key protection for recipient
-- Optional PBKDF2 based key protection
+- [x] Versioned container
+- [x] Multiple blob container
+- [x] Blob mimetype indicator
+- [x] Blob HMAC and signature
+- [x] Blob encryption
+- [x] Blob Tagging
+- [x] Blob location path (simulates storage tree view)
+- [x] Public key based symmetric-key protection for recipient
+- [x] Optional PBKDF2 based key protection
+- [x] Blob compression (GZIP)
+- [x] Simulated Directory Listing
+- Blob Querying
+    - [x] By Id
+    - [x] By Path
+    - [x] By Tag
 
 ## Documentation
 - [Container Indentification](doc/identification.md)
