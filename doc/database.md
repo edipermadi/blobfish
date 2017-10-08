@@ -9,7 +9,7 @@ H2 Database will be used to store recipient certificates, tags and blobs
 | id          | INTEGER, PRIMARY KEY, AUTO INCREMENT | Recipient internal identifier                                |
 | uuid        | VARCHAR(36), NOT NULL, UNIQUE        | Recipient external identifier (uuid)                         |
 | name        | VARCHAR(64), NOT NULL, UNIQUE        | Recipient Name                                               |
-| meta        | TEXT, NULL                           | Recipient Metadata                                           |
+| meta        | CLOB, NULL                           | Recipient Metadata                                           |
 | certificate | BLOB, NOT NULL                       | DER encoded Recipient Certificate                            |
 | imported    | BOOL, NOT NULL                       | True when certificate was imported from a blobfish container |
 | created_at  | TIMESTAMP, NOT NULL                  | Entry insertion timestamp                                    |
@@ -24,7 +24,7 @@ H2 Database will be used to store recipient certificates, tags and blobs
 |-------------|--------------------------------------|--------------------------------------------------------------|
 | id          | INTEGER, PRIMARY KEY, AUTO INCREMENT | Tag internal identifier                                      |
 | uuid        | VARCHAR(36), NOT NULL, UNIQUE        | Tag external identifier                                      |
-| tag         | VARHAR(64), NOT NULL, UNIQUE         | Lower case tag name                                          |
+| tag         | VARCHAR(64), NOT NULL, UNIQUE        | Lower case tag name                                          |
 | imported    | BOOL, NOT NULL                       | True when tag was imported from a blobfish container         |
 | created_at  | TIMESTAMP, NOT NULL                  | Entry insertion timestamp                                    |
 

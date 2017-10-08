@@ -95,7 +95,6 @@ abstract class ContainerDecoderBase extends ContainerBase {
 
             try (final GZIPInputStream gzis = new GZIPInputStream(bais)) {
                 final byte[] decompressed = IOUtils.toByteArray(gzis);
-                System.err.printf("[DEBUG] decompressed = %d bytes\n", decompressed.length);
                 return BlobfishProto.Blobfish.Body.Metadata.parseFrom(decompressed);
             }
         } catch (final IOException ex) {

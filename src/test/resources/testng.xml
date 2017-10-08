@@ -27,6 +27,7 @@
             <class name="com.github.edipermadi.security.blobfish.v1.ContainerDecodingTest"/>
             <class name="com.github.edipermadi.security.blobfish.v2.ContainerEncodingTest"/>
             <class name="com.github.edipermadi.security.blobfish.v2.ContainerDecodingTest"/>
+            <class name="com.github.edipermadi.security.blobfish.pool.BlobPoolBuilderTest"/>
         </classes>
     </test>
 </suite>
