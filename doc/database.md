@@ -39,7 +39,7 @@ H2 Database will be used to store recipient certificates, tags and blobs
 |-------------|--------------------------------------|--------------------------------------------------------------|
 | id          | INTEGER, PRIMARY KEY, AUTO INCREMENT | Blob internal identifier                                     |
 | uuid        | VARCHAR(36), NOT NULL, UNIQUE        | Blob external identifier                                     |
-| path        | TEXT, NOT NULL                       | Blob Path                                                    |
+| path        | VARCHAR(1024), NOT NULL, UNIQUE      | Blob Path                                                    |
 | mimetype    | VARCHAR(128), NOT NULL               | Blob mime type                                               |
 | payload     | BLOB, NOT NULL                       | Blob payload                                                 |
 | imported    | BOOL, NOT NULL                       | True when blob was imported from blobfish container          |
@@ -50,7 +50,7 @@ H2 Database will be used to store recipient certificates, tags and blobs
 - uuid
 - path
 
-## Blob Tags
+## Blobs Tags
 
 | Column      | Type                                 | Description                                                  |
 |-------------|--------------------------------------|--------------------------------------------------------------|

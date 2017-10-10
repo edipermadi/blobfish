@@ -14,8 +14,8 @@ import java.util.Properties;
  * @author Edi Permadi
  */
 final class BlobPoolImpl implements BlobPool {
-    private final Connection conn;
     private final Properties queries;
+    private final Connection connection;
 
     /**
      * Class constructor
@@ -37,15 +37,33 @@ final class BlobPoolImpl implements BlobPool {
         final String passwords = String.format("password %s", dbPassword);
 
         queries = loadQueries();
-        Class.forName("org.h2.Driver");
-        conn = DriverManager.getConnection(url, "sa", passwords);
-        createTable();
+        connection = getDbConnection(url, passwords);
+        createTables();
     }
 
-    private void createTable() throws SQLException {
-        try (final Statement stmt = conn.createStatement()) {
+    /**
+     * Create tables
+     *
+     * @throws SQLException when table creation failed
+     */
+    private void createTables() throws SQLException {
+        try (final Statement stmt = connection.createStatement()) {
+            /* create tables */
             stmt.executeUpdate(queries.getProperty("SQL_CREATE_TABLE_RECIPIENTS"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_TABLE_TAGS"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_TABLE_BLOBS"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_TABLE_BLOBS_TAGS"));
+
+            /* create indexes */
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_RECIPIENTS_UUID"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_RECIPIENTS_NAME"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_TAGS_UUID"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_TAGS_TAG"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_BLOBS_UUID"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_BLOBS_PATH"));
+            stmt.executeUpdate(queries.getProperty("SQL_CREATE_INDEX_BLOBS_TAGS_UNIQUE"));
         }
+        connection.commit();
     }
 
     /**
@@ -63,4 +81,17 @@ final class BlobPoolImpl implements BlobPool {
         }
     }
 
+    /**
+     * Get database connection
+     *
+     * @param url       url of database
+     * @param passwords user and database password
+     * @return database conection object
+     * @throws ClassNotFoundException when H2 driver was not found
+     * @throws SQLException           when establishing connection failed
+     */
+    private Connection getDbConnection(final String url, final String passwords) throws ClassNotFoundException, SQLException {
+        Class.forName("org.h2.Driver");
+        return DriverManager.getConnection(url, "sa", passwords);
+    }
 }
