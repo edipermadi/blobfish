@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.sql.SQLException;
 
 /**
  * Blob Pool interface
@@ -24,8 +25,9 @@ public interface BlobPool {
      * @throws BlobfishCryptoException when crypto operation failed
      * @throws IOException             when input stream accessing failed
      * @throws CertificateException    when sender certificate recovery failed
+     * @throws SQLException            when importing blob to pool failed
      */
-    void load(InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException;
+    void load(InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 
     /**
      * Load blobfish container into pool with certificate and private key
@@ -37,8 +39,7 @@ public interface BlobPool {
      * @throws BlobfishCryptoException when crypto operation failed
      * @throws IOException             when input stream accessing failed
      * @throws CertificateException    when sender certificate recovery failed
+     * @throws SQLException            when importing blob to pool failed
      */
-    void load(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException;
-
-    ;
+    void load(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 }

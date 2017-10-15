@@ -1,5 +1,6 @@
 package com.github.edipermadi.security.blobfish.pool;
 
+import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.codec.ContainerDecoder;
 import com.github.edipermadi.security.blobfish.codec.ContainerDecoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
@@ -10,11 +11,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Blob Pool Implementation
@@ -104,28 +103,98 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public void load(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException {
-        if (inputStream == null) {
-            throw new IllegalArgumentException("input stream is null");
-        } else if (password == null) {
-            throw new IllegalArgumentException("password is null");
-        } else if (password.isEmpty()) {
-            throw new IllegalArgumentException("password is empty");
-        }
-
+    public void load(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
         /* build decoder */
         final ContainerDecoder decoder = new ContainerDecoderBuilder()
                 .setInputStream(inputStream)
                 .build();
 
         /* process blobs */
-        decoder.getBlobs(password);
+        final Iterator<Blob> iterator = decoder.getBlobs(password);
+        load(iterator);
     }
 
     @Override
-    public void load(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException {
-        if (inputStream == null) {
-            throw new IllegalArgumentException("input stream is null");
+    public void load(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
+        /* build decoder */
+        final ContainerDecoder decoder = new ContainerDecoderBuilder()
+                .setInputStream(inputStream)
+                .build();
+
+        /* process blobs */
+        final Iterator<Blob> iterator = decoder.getBlobs(certificate, privateKey);
+        load(iterator);
+    }
+
+    /**
+     * Load blobs into pool
+     *
+     * @param iterator iterator of blobs
+     * @throws SQLException when importing failed
+     */
+    private void load(final Iterator<Blob> iterator) throws SQLException {
+        while (iterator.hasNext()) {
+            final Blob blob = iterator.next();
+            final byte[] payload = blob.getPayload();
+            final Blob.Metadata metadata = blob.getMetadata();
+            final Set<String> tags = metadata.getTags();
+            final String mimeType = metadata.getMimeType();
+            final String path = metadata.getPath();
+            final AtomicLong blobId = new AtomicLong(-1);
+
+            /* insert blob */
+            final String insertBlobQuery = queries.getProperty("SQL_INSERT_BLOB");
+            try (final PreparedStatement preparedStatement = connection.prepareStatement(insertBlobQuery, Statement.RETURN_GENERATED_KEYS)) {
+                preparedStatement.setString(1, path);
+                preparedStatement.setString(2, mimeType);
+                preparedStatement.setBinaryStream(3, new ByteArrayInputStream(payload));
+                preparedStatement.setBoolean(4, true);
+                if (preparedStatement.executeUpdate() == 0) {
+                    throw new SQLException("failed to insert blob");
+                }
+
+                /* get blob id */
+                final ResultSet resultSet = preparedStatement.getGeneratedKeys();
+                if (!resultSet.next()) {
+                    throw new SQLException("failed to get inserted blob id");
+                }
+                blobId.set(resultSet.getLong(1));
+            }
+
+            /* insert tags */
+            final HashMap<String, Long> tagIds = new HashMap<>();
+            final String mergeTagQuery = queries.getProperty("SQL_MERGE_TAG");
+            for (final String tag : tags) {
+                try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery, Statement.RETURN_GENERATED_KEYS)) {
+                    preparedStatement.setString(1, tag);
+                    if (preparedStatement.executeUpdate() == 0) {
+                        throw new SQLException("failed to merge tag");
+                    }
+
+                    /* get tag id */
+                    final ResultSet resultSet = preparedStatement.getGeneratedKeys();
+                    if (!resultSet.next()) {
+                        throw new SQLException("failed to get merged tag id");
+                    }
+                    final long tagId = resultSet.getLong(1);
+                    tagIds.put(tag, tagId);
+                }
+            }
+
+            /* insert tags association */
+            final String insertBlobTagQuery = queries.getProperty("SQL_INSERT_BLOB_TAG");
+            for (final Map.Entry<String, Long> entry : tagIds.entrySet()) {
+                final Long tagId = entry.getValue();
+                try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery)) {
+                    preparedStatement.setLong(1, blobId.get());
+                    preparedStatement.setLong(2, tagId);
+                    if (preparedStatement.executeUpdate() == 0) {
+                        throw new SQLException("failed to insert blob-tag association");
+                    }
+                }
+            }
+
+
         }
     }
 }
