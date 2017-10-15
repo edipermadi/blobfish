@@ -12,7 +12,9 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.*;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -162,39 +164,25 @@ final class BlobPoolImpl implements BlobPool {
             }
 
             /* insert tags */
-            final HashMap<String, Long> tagIds = new HashMap<>();
             final String mergeTagQuery = queries.getProperty("SQL_MERGE_TAG");
+            final String insertBlobTagQuery = queries.getProperty("SQL_INSERT_BLOB_TAG");
             for (final String tag : tags) {
-                try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery, Statement.RETURN_GENERATED_KEYS)) {
+                try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery)) {
                     preparedStatement.setString(1, tag);
                     if (preparedStatement.executeUpdate() == 0) {
                         throw new SQLException("failed to merge tag");
                     }
-
-                    /* get tag id */
-                    final ResultSet resultSet = preparedStatement.getGeneratedKeys();
-                    if (!resultSet.next()) {
-                        throw new SQLException("failed to get merged tag id");
-                    }
-                    final long tagId = resultSet.getLong(1);
-                    tagIds.put(tag, tagId);
                 }
-            }
 
-            /* insert tags association */
-            final String insertBlobTagQuery = queries.getProperty("SQL_INSERT_BLOB_TAG");
-            for (final Map.Entry<String, Long> entry : tagIds.entrySet()) {
-                final Long tagId = entry.getValue();
-                try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery)) {
+                /* insert tags association */
+                try (final PreparedStatement preparedStatement = connection.prepareStatement(insertBlobTagQuery)) {
                     preparedStatement.setLong(1, blobId.get());
-                    preparedStatement.setLong(2, tagId);
+                    preparedStatement.setString(2, tag);
                     if (preparedStatement.executeUpdate() == 0) {
                         throw new SQLException("failed to insert blob-tag association");
                     }
                 }
             }
-
-
         }
     }
 }
