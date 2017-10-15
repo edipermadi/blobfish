@@ -60,7 +60,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
     @Test
     @Parameters({"blobfish-path-v2", "blobfish-password"})
-    public void testLoadByPassword(final String blobPath, final String blobPassword) throws SQLException, IOException, ClassNotFoundException, CertificateException, BlobfishDecodeException, BlobfishCryptoException {
+    public void testImportPayloadByPassword(final String blobPath, final String blobPassword) throws SQLException, IOException, ClassNotFoundException, CertificateException, BlobfishDecodeException, BlobfishCryptoException {
         log("building load pool");
 
         final File dbFile = new File("target/db/blob-pool-2");
@@ -70,7 +70,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 .setDbPassword(dbPassword)
                 .build();
         try (final FileInputStream fis = new FileInputStream(new File(blobPath))) {
-            pool.load(fis, blobPassword);
+            pool.importPayload(fis, blobPassword);
         }
     }
 
@@ -78,7 +78,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     @Parameters({"blobfish-path-v2",
             "keystore-entry-password",
             "keystore-alias-enc-sender"})
-    public void testLoadByPrivateKey(final String blobPath,
+    public void testImportPayloadByPrivateKey(final String blobPath,
                                      final String keyStoreEntryPassword,
                                      final String keyStoreAlias) throws SQLException, IOException, ClassNotFoundException, CertificateException, BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
         log("building load pool");
@@ -92,7 +92,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         try (final FileInputStream fis = new FileInputStream(new File(blobPath))) {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyStoreAlias);
             final PrivateKey privateKey = (PrivateKey) keyStore.getKey(keyStoreAlias, keyStoreEntryPassword.toCharArray());
-            pool.load(fis, certificate, privateKey);
+            pool.importPayload(fis, certificate, privateKey);
         }
     }
 }

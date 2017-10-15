@@ -17,7 +17,7 @@ import java.sql.SQLException;
  */
 public interface BlobPool {
     /**
-     * Load blobfish container into pool with password
+     * Import blobfish container into pool with password
      *
      * @param inputStream input stream of blobfish container
      * @param password    recipient decryption password
@@ -27,10 +27,10 @@ public interface BlobPool {
      * @throws CertificateException    when sender certificate recovery failed
      * @throws SQLException            when importing blob to pool failed
      */
-    void load(InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
+    void importPayload(InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 
     /**
-     * Load blobfish container into pool with certificate and private key
+     * Import blobfish container into pool with certificate and private key
      *
      * @param inputStream input stream of blobfish container
      * @param certificate recipient decryption certificate
@@ -41,5 +41,5 @@ public interface BlobPool {
      * @throws CertificateException    when sender certificate recovery failed
      * @throws SQLException            when importing blob to pool failed
      */
-    void load(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
+    void importPayload(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 }

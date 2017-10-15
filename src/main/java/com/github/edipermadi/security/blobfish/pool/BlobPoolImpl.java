@@ -105,7 +105,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public void load(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
+    public void importPayload(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
         /* build decoder */
         final ContainerDecoder decoder = new ContainerDecoderBuilder()
                 .setInputStream(inputStream)
@@ -117,7 +117,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public void load(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
+    public void importPayload(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
         /* build decoder */
         final ContainerDecoder decoder = new ContainerDecoderBuilder()
                 .setInputStream(inputStream)
