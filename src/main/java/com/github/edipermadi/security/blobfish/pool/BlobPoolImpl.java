@@ -1,7 +1,15 @@
 package com.github.edipermadi.security.blobfish.pool;
 
+import com.github.edipermadi.security.blobfish.codec.ContainerDecoder;
+import com.github.edipermadi.security.blobfish.codec.ContainerDecoderBuilder;
+import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
+import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -93,5 +101,31 @@ final class BlobPoolImpl implements BlobPool {
     private Connection getDbConnection(final String url, final String passwords) throws ClassNotFoundException, SQLException {
         Class.forName("org.h2.Driver");
         return DriverManager.getConnection(url, "sa", passwords);
+    }
+
+    @Override
+    public void load(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException {
+        if (inputStream == null) {
+            throw new IllegalArgumentException("input stream is null");
+        } else if (password == null) {
+            throw new IllegalArgumentException("password is null");
+        } else if (password.isEmpty()) {
+            throw new IllegalArgumentException("password is empty");
+        }
+
+        /* build decoder */
+        final ContainerDecoder decoder = new ContainerDecoderBuilder()
+                .setInputStream(inputStream)
+                .build();
+
+        /* process blobs */
+        decoder.getBlobs(password);
+    }
+
+    @Override
+    public void load(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (inputStream == null) {
+            throw new IllegalArgumentException("input stream is null");
+        }
     }
 }

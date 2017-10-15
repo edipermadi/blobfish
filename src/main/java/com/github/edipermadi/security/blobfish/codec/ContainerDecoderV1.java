@@ -11,10 +11,7 @@ import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -511,6 +508,106 @@ class ContainerDecoderV1 extends ContainerDecoderBase implements ContainerDecode
         } catch (final InvalidProtocolBufferException ex) {
             throw new BlobfishDecodeException("failed to decode blob", ex);
         }
+    }
+
+    @Override
+    public Iterator<Blob> getBlobs(final String password) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (password == null) {
+            throw new IllegalArgumentException("password is null");
+        } else if (password.isEmpty()) {
+            throw new IllegalArgumentException("password ie empty");
+        } else if (!blobFish.getHeader().hasPassword()) {
+            throw new PasswordNotSupportedException();
+        }
+
+        /* initialize key and iv */
+        final byte[] salt = getSalt(blobFish);
+        final byte[] keyBytes = deriveKey(password.toCharArray(), salt);
+        final byte[] ivBytes = new byte[16];
+        Arrays.fill(ivBytes, (byte) 0);
+
+        /* setup iterator */
+        final ListIterator<BlobfishProto.Blobfish.Body.Blob> listIterator = blobFish.getBody()
+                .getBlobList()
+                .listIterator();
+
+        return new Iterator<Blob>() {
+            @Override
+            public boolean hasNext() {
+                return listIterator.hasNext();
+            }
+
+            @Override
+            public Blob next() {
+                try {
+                    final BlobfishProto.Blobfish.Body.Blob entry = listIterator.next();
+                    final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(entry.getMetadata(), keyBytes, ivBytes);
+                    final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(entry.getPayload(), keyBytes, ivBytes);
+                    return new BlobImpl(metadata, payload);
+                } catch (final BlobfishCryptoException | BlobfishDecodeException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+
+            @Override
+            public void remove() {
+
+            }
+        };
+    }
+
+    @Override
+    public Iterator<Blob> getBlobs(final X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equalsIgnoreCase(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
+        } else if (privateKey == null) {
+            throw new IllegalArgumentException("privateKey is null");
+        } else if (!"RSA".equalsIgnoreCase(privateKey.getAlgorithm())) {
+            throw new IllegalArgumentException("invalid privateKey type");
+        }
+
+        final ByteString hashCertificate = digestCertificate(certificate);
+        for (final BlobfishProto.Blobfish.Header.Recipient recipient : blobFish.getHeader().getRecipientList()) {
+            if (hashCertificate.equals(recipient.getHashCertificate())) {
+                /* setup key and iv */
+                final byte[] keyBytes = unprotectKey(recipient.getCipheredKey().toByteArray(), privateKey);
+                final byte[] ivBytes = new byte[16];
+                Arrays.fill(ivBytes, (byte) 0);
+
+                /* setup iterator */
+                final ListIterator<BlobfishProto.Blobfish.Body.Blob> listIterator = blobFish.getBody()
+                        .getBlobList()
+                        .listIterator();
+
+                return new Iterator<Blob>() {
+                    @Override
+                    public boolean hasNext() {
+                        return listIterator.hasNext();
+                    }
+
+                    @Override
+                    public Blob next() {
+                        try {
+                            final BlobfishProto.Blobfish.Body.Blob entry = listIterator.next();
+                            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(entry.getMetadata(), keyBytes, ivBytes);
+                            final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(entry.getPayload(), keyBytes, ivBytes);
+                            return new BlobImpl(metadata, payload);
+                        } catch (final BlobfishCryptoException | BlobfishDecodeException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+
+                    @Override
+                    public void remove() {
+
+                    }
+                };
+            }
+        }
+
+        throw new InvalidDecryptionKeyException();
     }
 
     private Blob.Metadata getMetadata(final int blobId, final byte[] keyBytes) throws BlobfishDecodeException, BlobfishCryptoException {
