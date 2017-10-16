@@ -1,6 +1,7 @@
 package com.github.edipermadi.security.blobfish.pool;
 
 import com.github.edipermadi.security.blobfish.AbstractTest;
+import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import org.testng.annotations.BeforeClass;
@@ -108,6 +109,22 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 log("found entry");
                 log("  uuid : %s", entry.getKey());
                 log("  tag  : %s", entry.getValue());
+            }
+            empty = tags.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testListBlobs() throws SQLException {
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> tags = blobPool.getBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : tags.entrySet()) {
+                final Blob.SimplifiedMetadata metadata = entry.getValue();
+                log("found entry");
+                log("  uuid      : %s", entry.getKey());
+                log("  mime-type : %s", metadata.getMimeType());
+                log("  path      : %s", metadata.getPath());
             }
             empty = tags.isEmpty();
         }

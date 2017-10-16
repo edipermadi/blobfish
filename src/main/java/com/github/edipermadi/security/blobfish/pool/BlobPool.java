@@ -1,5 +1,6 @@
 package com.github.edipermadi.security.blobfish.pool;
 
+import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 
@@ -55,4 +56,14 @@ public interface BlobPool {
      * @throws SQLException when reading tags failed
      */
     Map<UUID, String> getTags(int page, int size) throws SQLException;
+
+    /**
+     * Get blobs
+     *
+     * @param page number starts from 1
+     * @param size page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading tags failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> getBlobs(int page, int size) throws SQLException;
 }
