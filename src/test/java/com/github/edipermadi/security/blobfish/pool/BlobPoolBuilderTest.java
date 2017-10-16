@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.*;
@@ -117,19 +118,27 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
-    public void testListBlobs() throws SQLException {
+    public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
             final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
                 final Set<String> tags = blobPool.getTags(entry.getKey());
+                final byte[] payload = blobPool.getPayload(entry.getKey());
 
                 log("found entry");
                 log("  uuid      : %s", entry.getKey());
                 log("  mime-type : %s", metadata.getMimeType());
                 log("  path      : %s", metadata.getPath());
                 log("  tags      : %s", Joiner.on(", ").join(tags));
+
+                final File file = new File(metadata.getPath());
+                final File dir = new File("target");
+                final File outFile = new File(dir, "pool-" + file.getName());
+                try (final FileOutputStream fos = new FileOutputStream(outFile)) {
+                    fos.write(payload);
+                }
             }
             empty = blobs.isEmpty();
         }

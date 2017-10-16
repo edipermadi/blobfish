@@ -10,7 +10,6 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -70,9 +69,20 @@ public interface BlobPool {
 
     /**
      * Get tags of a particular blob
+     *
      * @param blobId blob identifier
      * @return set of tags
      * @throws SQLException when reading tags failed
      */
     Set<String> getTags(UUID blobId) throws SQLException;
+
+    /**
+     * Get blob payload
+     *
+     * @param blobId blob identifier
+     * @return byte array of blob
+     * @throws SQLException when reading payload failed
+     * @throws IOException  when reading blob payload failed
+     */
+    byte[] getPayload(UUID blobId) throws SQLException, IOException;
 }

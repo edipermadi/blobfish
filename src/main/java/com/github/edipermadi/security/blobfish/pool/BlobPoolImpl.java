@@ -5,6 +5,7 @@ import com.github.edipermadi.security.blobfish.codec.ContainerDecoder;
 import com.github.edipermadi.security.blobfish.codec.ContainerDecoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -165,6 +166,26 @@ final class BlobPoolImpl implements BlobPool {
             }
 
             return tags;
+        }
+    }
+
+    @Override
+    public byte[] getPayload(UUID blobId) throws SQLException, IOException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("blobId is null");
+        }
+
+        final String query = queries.getProperty("SQL_GET_BLOB");
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob " + blobId);
+            }
+            final InputStream inputStream = resultSet.getBinaryStream("payload");
+            return IOUtils.toByteArray(inputStream);
         }
     }
 
