@@ -12,9 +12,7 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.*;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -48,6 +46,61 @@ final class BlobPoolImpl implements BlobPool {
         queries = loadQueries();
         connection = getDbConnection(url, passwords);
         createTables();
+    }
+
+    @Override
+    public void importPayload(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
+        /* build decoder */
+        final ContainerDecoder decoder = new ContainerDecoderBuilder()
+                .setInputStream(inputStream)
+                .build();
+
+        /* process blobs */
+        final Iterator<Blob> iterator = decoder.getBlobs(password);
+        load(iterator);
+    }
+
+    @Override
+    public void importPayload(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
+        /* build decoder */
+        final ContainerDecoder decoder = new ContainerDecoderBuilder()
+                .setInputStream(inputStream)
+                .build();
+
+        /* process blobs */
+        final Iterator<Blob> iterator = decoder.getBlobs(certificate, privateKey);
+        load(iterator);
+    }
+
+    @Override
+    public Map<UUID, String> getTags(final int page, final int size) throws SQLException {
+        if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final String query = queries.getProperty("SQL_SELECT_TAG");
+
+        /* execute query */
+        final PreparedStatement preparedStatement = connection.prepareStatement(query);
+        preparedStatement.setLong(1, offset);
+        preparedStatement.setLong(2, size);
+        final ResultSet resultSet = preparedStatement.executeQuery();
+
+
+        /* read results */
+        final Map<UUID, String> tags = new HashMap<>();
+        while (resultSet.next()) {
+            final String uuid = resultSet.getString("uuid");
+            final String tag = resultSet.getString("tag");
+            tags.put(UUID.fromString(uuid), tag);
+
+        }
+
+        return tags;
     }
 
     /**
@@ -102,30 +155,6 @@ final class BlobPoolImpl implements BlobPool {
     private Connection getDbConnection(final String url, final String passwords) throws ClassNotFoundException, SQLException {
         Class.forName("org.h2.Driver");
         return DriverManager.getConnection(url, "sa", passwords);
-    }
-
-    @Override
-    public void importPayload(final InputStream inputStream, final String password) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
-        /* build decoder */
-        final ContainerDecoder decoder = new ContainerDecoderBuilder()
-                .setInputStream(inputStream)
-                .build();
-
-        /* process blobs */
-        final Iterator<Blob> iterator = decoder.getBlobs(password);
-        load(iterator);
-    }
-
-    @Override
-    public void importPayload(InputStream inputStream, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException {
-        /* build decoder */
-        final ContainerDecoder decoder = new ContainerDecoderBuilder()
-                .setInputStream(inputStream)
-                .build();
-
-        /* process blobs */
-        final Iterator<Blob> iterator = decoder.getBlobs(certificate, privateKey);
-        load(iterator);
     }
 
     /**

@@ -16,6 +16,8 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Blob Pool Builder Unit Test
@@ -24,6 +26,7 @@ import java.sql.SQLException;
  */
 public final class BlobPoolBuilderTest extends AbstractTest {
     private KeyStore keyStore;
+    private BlobPool blobPool;
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
@@ -42,7 +45,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     @BeforeMethod
     public void beforeMethod(final Method method) {
         log("========================================");
-        log(method.getName(), true);
+        log(method.getName());
         log("========================================");
     }
 
@@ -79,20 +82,34 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             "keystore-entry-password",
             "keystore-alias-enc-sender"})
     public void testImportPayloadByPrivateKey(final String blobPath,
-                                     final String keyStoreEntryPassword,
-                                     final String keyStoreAlias) throws SQLException, IOException, ClassNotFoundException, CertificateException, BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
+                                              final String keyStoreEntryPassword,
+                                              final String keyStoreAlias) throws SQLException, IOException, ClassNotFoundException, CertificateException, BlobfishDecodeException, BlobfishCryptoException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
         log("building load pool");
 
         final File dbFile = new File("target/db/blob-pool-3");
         final String dbPassword = "password";
-        final BlobPool pool = new BlobPoolBuilder()
+        blobPool = new BlobPoolBuilder()
                 .setDbFile(dbFile)
                 .setDbPassword(dbPassword)
                 .build();
         try (final FileInputStream fis = new FileInputStream(new File(blobPath))) {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyStoreAlias);
             final PrivateKey privateKey = (PrivateKey) keyStore.getKey(keyStoreAlias, keyStoreEntryPassword.toCharArray());
-            pool.importPayload(fis, certificate, privateKey);
+            blobPool.importPayload(fis, certificate, privateKey);
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testListTags() throws SQLException {
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> tags = blobPool.getTags(page, 10);
+            for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
+                log("found entry");
+                log("  uuid : %s", entry.getKey());
+                log("  tag  : %s", entry.getValue());
+            }
+            empty = tags.isEmpty();
         }
     }
 }

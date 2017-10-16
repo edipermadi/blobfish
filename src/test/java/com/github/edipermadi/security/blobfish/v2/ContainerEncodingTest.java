@@ -13,7 +13,6 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.testng.Assert;
-import org.testng.Reporter;
 import org.testng.annotations.*;
 
 import javax.crypto.BadPaddingException;
@@ -41,7 +40,7 @@ import java.util.Set;
 public final class ContainerEncodingTest extends AbstractTest {
     private KeyStore keyStore;
     private TikaConfig tika;
-    private static final int BLOB_VERSION =2;
+    private static final int BLOB_VERSION = 2;
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
@@ -59,14 +58,14 @@ public final class ContainerEncodingTest extends AbstractTest {
 
     @BeforeMethod
     public void beforeMethod(final Method method) {
-        Reporter.log("========================================", true);
-        Reporter.log(method.getName(), true);
-        Reporter.log("========================================", true);
+        log("========================================");
+        log(method.getName());
+        log("========================================");
     }
 
     @AfterMethod
     public void afterMethod() {
-        Reporter.log("", true);
+        log("");
     }
 
     //------------------------------------------------------------------------------------------------------------------
