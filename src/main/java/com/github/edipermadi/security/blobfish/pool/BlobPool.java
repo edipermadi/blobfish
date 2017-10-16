@@ -12,6 +12,7 @@ import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -48,22 +49,30 @@ public interface BlobPool {
     void importPayload(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 
     /**
-     * Get tags
+     * List tags
      *
      * @param page number starts from 1
      * @param size page size at least 1
      * @return map of tag id and string
      * @throws SQLException when reading tags failed
      */
-    Map<UUID, String> getTags(int page, int size) throws SQLException;
+    Map<UUID, String> listTags(int page, int size) throws SQLException;
 
     /**
-     * Get blobs
+     * List blobs
      *
      * @param page number starts from 1
      * @param size page size at least 1
      * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException;
+
+    /**
+     * Get tags of a particular blob
+     * @param blobId blob identifier
+     * @return set of tags
      * @throws SQLException when reading tags failed
      */
-    Map<UUID, Blob.SimplifiedMetadata> getBlobs(int page, int size) throws SQLException;
+    Set<String> getTags(UUID blobId) throws SQLException;
 }

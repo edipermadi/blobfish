@@ -73,7 +73,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, String> getTags(final int page, final int size) throws SQLException {
+    public Map<UUID, String> listTags(final int page, final int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -82,29 +82,30 @@ final class BlobPoolImpl implements BlobPool {
 
         /* prepare parameters */
         final long offset = (page - 1) * size;
-        final String query = queries.getProperty("SQL_SELECT_TAG");
+        final String query = queries.getProperty("SQL_LIST_TAG");
 
         /* execute query */
-        final PreparedStatement preparedStatement = connection.prepareStatement(query);
-        preparedStatement.setLong(1, offset);
-        preparedStatement.setLong(2, size);
-        final ResultSet resultSet = preparedStatement.executeQuery();
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
 
 
-        /* read results */
-        final Map<UUID, String> tags = new HashMap<>();
-        while (resultSet.next()) {
-            final String uuid = resultSet.getString("uuid");
-            final String tag = resultSet.getString("tag");
-            tags.put(UUID.fromString(uuid), tag);
+            /* read results */
+            final Map<UUID, String> tags = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String tag = resultSet.getString("tag");
+                tags.put(UUID.fromString(uuid), tag);
 
+            }
+
+            return tags;
         }
-
-        return tags;
     }
 
     @Override
-    public Map<UUID, Blob.SimplifiedMetadata> getBlobs(int page, int size) throws SQLException {
+    public Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -113,36 +114,58 @@ final class BlobPoolImpl implements BlobPool {
 
         /* prepare parameters */
         final long offset = (page - 1) * size;
-        final String query = queries.getProperty("SQL_SELECT_BLOB");
+        final String query = queries.getProperty("SQL_LIST_BLOB");
 
         /* execute query */
-        final PreparedStatement preparedStatement = connection.prepareStatement(query);
-        preparedStatement.setLong(1, offset);
-        preparedStatement.setLong(2, size);
-        final ResultSet resultSet = preparedStatement.executeQuery();
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
 
+            /* read results */
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String path = resultSet.getString("path");
+                final String mimetype = resultSet.getString("mimetype");
+                blobs.put(UUID.fromString(uuid), new Blob.SimplifiedMetadata() {
+                    @Override
+                    public String getPath() {
+                        return path;
+                    }
 
-        /* read results */
-        final Map<UUID, Blob.SimplifiedMetadata> blobs = new HashMap<>();
-        while (resultSet.next()) {
-            final String uuid = resultSet.getString("uuid");
-            final String path = resultSet.getString("path");
-            final String mimetype = resultSet.getString("mimetype");
-            blobs.put(UUID.fromString(uuid), new Blob.SimplifiedMetadata() {
-                @Override
-                public String getPath() {
-                    return path;
-                }
+                    @Override
+                    public String getMimeType() {
+                        return mimetype;
+                    }
+                });
 
-                @Override
-                public String getMimeType() {
-                    return mimetype;
-                }
-            });
+            }
 
+            return blobs;
+        }
+    }
+
+    @Override
+    public Set<String> getTags(final UUID blobId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("blobId is null");
         }
 
-        return blobs;
+        final String query = queries.getProperty("SQL_GET_TAGS");
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            final Set<String> tags = new HashSet<>();
+            while (resultSet.next()) {
+                final String tag = resultSet.getString("tag");
+                tags.add(tag);
+            }
+
+            return tags;
+        }
     }
 
     /**

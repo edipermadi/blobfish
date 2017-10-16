@@ -4,6 +4,7 @@ import com.github.edipermadi.security.blobfish.AbstractTest;
 import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
+import com.google.common.base.Joiner;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Parameters;
@@ -18,6 +19,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -104,7 +106,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListTags() throws SQLException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.getTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 log("found entry");
                 log("  uuid : %s", entry.getKey());
@@ -118,15 +120,18 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListBlobs() throws SQLException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> tags = blobPool.getBlobs(page, 10);
-            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : tags.entrySet()) {
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
+                final Set<String> tags = blobPool.getTags(entry.getKey());
+
                 log("found entry");
                 log("  uuid      : %s", entry.getKey());
                 log("  mime-type : %s", metadata.getMimeType());
                 log("  path      : %s", metadata.getPath());
+                log("  tags      : %s", Joiner.on(", ").join(tags));
             }
-            empty = tags.isEmpty();
+            empty = blobs.isEmpty();
         }
     }
 }
