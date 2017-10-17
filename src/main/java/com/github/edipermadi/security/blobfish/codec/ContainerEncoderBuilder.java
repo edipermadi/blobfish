@@ -126,6 +126,8 @@ public final class ContainerEncoderBuilder {
         switch (version) {
             case 1:
                 return new ContainerEncoderV1(this);
+            case 2:
+                return new ContainerEncoderV2(this);
             default:
                 throw new IllegalStateException("invalid version number");
         }

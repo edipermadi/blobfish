@@ -1,5 +1,14 @@
 # Blobfish Changelog
 
+## v2.0.0 [October 17, 2017]
+
+**New Features**
+
+- Create `BlobPool` from existing blobfish container
+- List blobs within `BlobPool`
+- List tags within `BlobPool`
+- List associated to a blob
+
 ## v1.1.0 [October 4, 2017]
 
 **New Features**

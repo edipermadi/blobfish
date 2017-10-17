@@ -7,7 +7,6 @@ import com.github.edipermadi.security.blobfish.exc.SignCalculationException;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.crypto.Cipher;
@@ -19,7 +18,6 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,8 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Edi Permadi
  */
-final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncoder {
-    private final PrivateKey signingPrivateKey;
+class ContainerEncoderV1 extends ContainerEncoderBase implements ContainerEncoder {
     private final CodedOutputStream codedOutputStream;
     private byte[] keyBytes;
     private final AtomicInteger counter = new AtomicInteger(0);
@@ -43,8 +40,22 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
      * @throws BlobfishCryptoException when cryptographic exception occurred
      * @throws BlobfishEncodeException whn encoding exception occurred
      */
-    ContainerEncoderV1(ContainerEncoderBuilder builder) throws BlobfishCryptoException, BlobfishEncodeException {
-        signingPrivateKey = builder.signingPrivateKey;
+    ContainerEncoderV1(final ContainerEncoderBuilder builder) throws BlobfishEncodeException, BlobfishCryptoException {
+        this(builder, 1, false);
+    }
+
+    /**
+     * Container Encoder Version 1 Constructor
+     *
+     * @param builder    Container Encoder Builder Instance
+     * @param version    container encoding version
+     * @param compressed set to true to enable compression
+     * @throws BlobfishCryptoException when cryptographic exception occurred
+     * @throws BlobfishEncodeException whn encoding exception occurred
+     */
+    ContainerEncoderV1(final ContainerEncoderBuilder builder, final int version, final boolean compressed) throws BlobfishCryptoException, BlobfishEncodeException {
+        super(builder, version, compressed);
+
         codedOutputStream = CodedOutputStream.newInstance(builder.outputStream);
         bodyBuilder = BlobfishProto.Blobfish.Body.newBuilder();
 
@@ -126,44 +137,12 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
     public void write() throws IOException {
         BlobfishProto.Blobfish.newBuilder()
                 .setMagic(Const.MAGIC_CODE)
-                .setVersion(Const.VERSION_NUMBER)
+                .setVersion(version)
                 .setBody(bodyBuilder)
                 .setHeader(headerBuilder)
                 .build()
                 .writeTo(codedOutputStream);
         codedOutputStream.flush();
-    }
-
-    /**
-     * Encode metadata into byte array
-     *
-     * @param path     path of blob
-     * @param tags     tags of blob
-     * @param mimeType mime-type of blob
-     * @return serialized blob metadata
-     */
-    private byte[] encodeMetadata(final String path, final Set<String> tags, final String mimeType) {
-        return BlobfishProto.Blobfish.Body.Metadata.newBuilder()
-                .setPath(path)
-                .setMimeType(mimeType)
-                .addAllTags(filterTags(tags))
-                .build()
-                .toByteArray();
-    }
-
-    /**
-     * Encode payload
-     *
-     * @param inputStream input stream of payload
-     * @return byte array of encoded payload
-     * @throws IOException when encoding failed
-     */
-    private byte[] encodePayload(final InputStream inputStream) throws IOException {
-        final byte[] payload = IOUtils.toByteArray(inputStream);
-        return BlobfishProto.Blobfish.Body.Payload.newBuilder()
-                .setData(ByteString.copyFrom(payload))
-                .build()
-                .toByteArray();
     }
 
     /**
@@ -214,20 +193,5 @@ final class ContainerEncoderV1 extends ContainerV1Base implements ContainerEncod
         } catch (final SignatureException ex) {
             throw new SignCalculationException(ex);
         }
-    }
-
-    /**
-     * Convert tags to lowercase
-     *
-     * @param tags source tags
-     * @return converted tags
-     */
-    private Set<String> filterTags(final Set<String> tags) {
-        final Set<String> result = new HashSet<>();
-        for (final String tag : tags) {
-            result.add(tag.toLowerCase());
-        }
-
-        return result;
     }
 }

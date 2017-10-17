@@ -10,7 +10,8 @@
     <parameter name="keystore-alias-enc-receiver1" value="enc.receiver1"/>
     <parameter name="keystore-alias-enc-receiver2" value="enc.receiver2"/>
     <parameter name="blobfish-password" value="7h15!5p@55w0rd"/>
-    <parameter name="blobfish-path" value="target/output.ugly"/>
+    <parameter name="blobfish-path-v1" value="target/output-v1.ugly"/>
+    <parameter name="blobfish-path-v2" value="target/output-v2.ugly"/>
 
     <parameter name="image1" value="src/test/resources/amused.png"/>
     <parameter name="image2" value="src/test/resources/annoyed.png"/>
@@ -22,8 +23,11 @@
 
     <test name="ContainerEncoderBuilder Test">
         <classes>
-            <class name="com.github.edipermadi.security.blobfish.ContainerEncodingTest"/>
-            <class name="com.github.edipermadi.security.blobfish.ContainerDecodingTest"/>
+            <class name="com.github.edipermadi.security.blobfish.v1.ContainerEncodingTest"/>
+            <class name="com.github.edipermadi.security.blobfish.v1.ContainerDecodingTest"/>
+            <class name="com.github.edipermadi.security.blobfish.v2.ContainerEncodingTest"/>
+            <class name="com.github.edipermadi.security.blobfish.v2.ContainerDecodingTest"/>
+            <class name="com.github.edipermadi.security.blobfish.pool.BlobPoolBuilderTest"/>
         </classes>
     </test>
 </suite>

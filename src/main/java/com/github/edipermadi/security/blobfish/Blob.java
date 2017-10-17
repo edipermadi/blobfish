@@ -23,11 +23,9 @@ public interface Blob {
     byte[] getPayload();
 
     /**
-     * Blob metadata data type interface
-     *
-     * @author Edi Permadi
+     * Blob simplified metadata
      */
-    interface Metadata {
+    interface SimplifiedMetadata {
         /**
          * Get blob path
          *
@@ -36,17 +34,24 @@ public interface Blob {
         String getPath();
 
         /**
-         * Get blob tags
-         *
-         * @return set of blob tags (in lower case)
-         */
-        Set<String> getTags();
-
-        /**
          * Blob mime-type hint
          *
          * @return string of mime-type detected while encoding
          */
         String getMimeType();
+    }
+
+    /**
+     * Blob metadata data type interface
+     *
+     * @author Edi Permadi
+     */
+    interface Metadata extends SimplifiedMetadata {
+        /**
+         * Get blob tags
+         *
+         * @return set of blob tags (in lower case)
+         */
+        Set<String> getTags();
     }
 }

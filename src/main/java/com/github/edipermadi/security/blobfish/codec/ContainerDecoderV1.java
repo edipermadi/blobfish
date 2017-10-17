@@ -6,24 +6,12 @@ import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ProtocolStringList;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.Mac;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.PrivateKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -31,18 +19,24 @@ import java.util.regex.Pattern;
  *
  * @author Edi Permadi
  */
-final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecoder {
-    private final BlobfishProto.Blobfish blobFish;
-    private final X509Certificate signingCertificate;
-
+class ContainerDecoderV1 extends ContainerDecoderBase implements ContainerDecoder {
     /**
      * Class constructor
      *
      * @param blobFish blobfish object
      */
     ContainerDecoderV1(final BlobfishProto.Blobfish blobFish) throws IOException, CertificateException {
-        this.blobFish = blobFish;
-        this.signingCertificate = decodeSigningCertificate(blobFish);
+        super(blobFish, false);
+    }
+
+    /**
+     * Class constructor
+     *
+     * @param blobFish   blobfish object
+     * @param compressed set to true to enable compression
+     */
+    ContainerDecoderV1(final BlobfishProto.Blobfish blobFish, final boolean compressed) throws IOException, CertificateException {
+        super(blobFish, compressed);
     }
 
     @Override
@@ -72,10 +66,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new PasswordNotSupportedException();
         }
 
-        final byte[] salt = blobFish.getHeader()
-                .getPassword()
-                .getSalt()
-                .toByteArray();
+        final byte[] salt = getSalt(blobFish);
         final byte[] key = deriveKey(password.toCharArray(), salt);
         return getMetadata(blobId, key);
     }
@@ -96,10 +87,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new PasswordNotSupportedException();
         }
 
-        final byte[] salt = blobFish.getHeader()
-                .getPassword()
-                .getSalt()
-                .toByteArray();
+        final byte[] salt = getSalt(blobFish);
         final byte[] key = deriveKey(password.toCharArray(), salt);
         return getMetadata(path, key);
     }
@@ -170,10 +158,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new PasswordNotSupportedException();
         }
 
-        final byte[] salt = blobFish.getHeader()
-                .getPassword()
-                .getSalt()
-                .toByteArray();
+        final byte[] salt = getSalt(blobFish);
         final byte[] key = deriveKey(password.toCharArray(), salt);
         return getPayload(blobId, key);
     }
@@ -194,10 +179,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new PasswordNotSupportedException();
         }
 
-        final byte[] salt = blobFish.getHeader()
-                .getPassword()
-                .getSalt()
-                .toByteArray();
+        final byte[] salt = getSalt(blobFish);
         final byte[] key = deriveKey(password.toCharArray(), salt);
         return getPayload(path, key);
     }
@@ -268,10 +250,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new PasswordNotSupportedException();
         }
 
-        final byte[] salt = blobFish.getHeader()
-                .getPassword()
-                .getSalt()
-                .toByteArray();
+        final byte[] salt = getSalt(blobFish);
         final byte[] key = deriveKey(password.toCharArray(), salt);
         return getBlob(blobId, key);
     }
@@ -292,10 +271,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
             throw new PasswordNotSupportedException();
         }
 
-        final byte[] salt = blobFish.getHeader()
-                .getPassword()
-                .getSalt()
-                .toByteArray();
+        final byte[] salt = getSalt(blobFish);
         final byte[] key = deriveKey(password.toCharArray(), salt);
         return getBlob(path, key);
     }
@@ -366,10 +342,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         try {
             /* derive symmetric-key from password */
-            final byte[] salt = blobFish.getHeader()
-                    .getPassword()
-                    .getSalt()
-                    .toByteArray();
+            final byte[] salt = getSalt(blobFish);
             final byte[] key = deriveKey(password.toCharArray(), salt);
             return getTags(key);
         } catch (final InvalidProtocolBufferException ex) {
@@ -428,10 +401,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         try {
             /* derive symmetric-key from password */
-            final byte[] salt = blobFish.getHeader()
-                    .getPassword()
-                    .getSalt()
-                    .toByteArray();
+            final byte[] salt = getSalt(blobFish);
             final byte[] key = deriveKey(password.toCharArray(), salt);
             return listDirectory(path, key);
         } catch (final InvalidProtocolBufferException ex) {
@@ -494,10 +464,7 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         try {
             /* derive symmetric-key from password */
-            final byte[] salt = blobFish.getHeader()
-                    .getPassword()
-                    .getSalt()
-                    .toByteArray();
+            final byte[] salt = getSalt(blobFish);
             final byte[] key = deriveKey(password.toCharArray(), salt);
 
             return listByTags(tags, key);
@@ -543,28 +510,104 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         }
     }
 
-    /**
-     * Decode sender signing certificate
-     *
-     * @param blobFish blobfish object
-     * @return sender signing certificate
-     * @throws IOException          when IO failure occurred
-     * @throws CertificateException when certificate cannot be recovered or invalid certificate algorithm found
-     */
-    private X509Certificate decodeSigningCertificate(final BlobfishProto.Blobfish blobFish) throws IOException,
-            CertificateException {
-        final byte[] signingCertificatePayload = blobFish.getHeader()
-                .getSender()
-                .getSigningCertificate()
-                .toByteArray();
-        try (final ByteArrayInputStream bais = new ByteArrayInputStream(signingCertificatePayload)) {
-            final CertificateFactory factory = CertificateFactory.getInstance("X.509");
-            final Certificate certificate = factory.generateCertificate(bais);
-            if (!"EC".equals(certificate.getPublicKey().getAlgorithm())) {
-                throw new CertificateException("invalid signing certificate type");
-            }
-            return (X509Certificate) certificate;
+    @Override
+    public Iterator<Blob> getBlobs(final String password) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (password == null) {
+            throw new IllegalArgumentException("password is null");
+        } else if (password.isEmpty()) {
+            throw new IllegalArgumentException("password ie empty");
+        } else if (!blobFish.getHeader().hasPassword()) {
+            throw new PasswordNotSupportedException();
         }
+
+        /* initialize key and iv */
+        final byte[] salt = getSalt(blobFish);
+        final byte[] keyBytes = deriveKey(password.toCharArray(), salt);
+        final byte[] ivBytes = new byte[16];
+        Arrays.fill(ivBytes, (byte) 0);
+
+        /* setup iterator */
+        final ListIterator<BlobfishProto.Blobfish.Body.Blob> listIterator = blobFish.getBody()
+                .getBlobList()
+                .listIterator();
+
+        return new Iterator<Blob>() {
+            @Override
+            public boolean hasNext() {
+                return listIterator.hasNext();
+            }
+
+            @Override
+            public Blob next() {
+                try {
+                    final BlobfishProto.Blobfish.Body.Blob entry = listIterator.next();
+                    final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(entry.getMetadata(), keyBytes, ivBytes);
+                    final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(entry.getPayload(), keyBytes, ivBytes);
+                    return new BlobImpl(metadata, payload);
+                } catch (final BlobfishCryptoException | BlobfishDecodeException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+
+            @Override
+            public void remove() {
+
+            }
+        };
+    }
+
+    @Override
+    public Iterator<Blob> getBlobs(final X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException {
+        if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equalsIgnoreCase(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
+        } else if (privateKey == null) {
+            throw new IllegalArgumentException("privateKey is null");
+        } else if (!"RSA".equalsIgnoreCase(privateKey.getAlgorithm())) {
+            throw new IllegalArgumentException("invalid privateKey type");
+        }
+
+        final ByteString hashCertificate = digestCertificate(certificate);
+        for (final BlobfishProto.Blobfish.Header.Recipient recipient : blobFish.getHeader().getRecipientList()) {
+            if (hashCertificate.equals(recipient.getHashCertificate())) {
+                /* setup key and iv */
+                final byte[] keyBytes = unprotectKey(recipient.getCipheredKey().toByteArray(), privateKey);
+                final byte[] ivBytes = new byte[16];
+                Arrays.fill(ivBytes, (byte) 0);
+
+                /* setup iterator */
+                final ListIterator<BlobfishProto.Blobfish.Body.Blob> listIterator = blobFish.getBody()
+                        .getBlobList()
+                        .listIterator();
+
+                return new Iterator<Blob>() {
+                    @Override
+                    public boolean hasNext() {
+                        return listIterator.hasNext();
+                    }
+
+                    @Override
+                    public Blob next() {
+                        try {
+                            final BlobfishProto.Blobfish.Body.Blob entry = listIterator.next();
+                            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(entry.getMetadata(), keyBytes, ivBytes);
+                            final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(entry.getPayload(), keyBytes, ivBytes);
+                            return new BlobImpl(metadata, payload);
+                        } catch (final BlobfishCryptoException | BlobfishDecodeException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+
+                    @Override
+                    public void remove() {
+
+                    }
+                };
+            }
+        }
+
+        throw new InvalidDecryptionKeyException();
     }
 
     private Blob.Metadata getMetadata(final int blobId, final byte[] keyBytes) throws BlobfishDecodeException, BlobfishCryptoException {
@@ -574,37 +617,9 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
             if (blob.getId() == blobId) {
-                /* decrypt metadata and payload */
-                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
-
-                try {
-                    /* parse decrypted metadata and payload */
-                    final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
-
-                    return new Blob.Metadata() {
-                        @Override
-                        public String getPath() {
-                            return metadata.getPath();
-                        }
-
-                        @Override
-                        public Set<String> getTags() {
-                            /* extract tags */
-                            final Set<String> tags = new HashSet<>();
-                            for (int i = 0; i < metadata.getTagsCount(); i++) {
-                                tags.add(metadata.getTags(i));
-                            }
-                            return tags;
-                        }
-
-                        @Override
-                        public String getMimeType() {
-                            return metadata.getMimeType();
-                        }
-                    };
-                } catch (final InvalidProtocolBufferException ex) {
-                    throw new BlobfishDecodeException("failed to decode blob", ex);
-                }
+                /* decrypt and decode metadata */
+                final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), keyBytes, ivBytes);
+                return new MetadataImpl(metadata);
             }
         }
 
@@ -617,38 +632,13 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         Arrays.fill(ivBytes, (byte) 0);
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
-            try {
-                /* decrypt metadata and payload */
-                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
-                final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
-                if (!metadata.getPath().equals(path)) {
-                    continue;
-                }
-
-                return new Blob.Metadata() {
-                    @Override
-                    public String getPath() {
-                        return metadata.getPath();
-                    }
-
-                    @Override
-                    public Set<String> getTags() {
-                                    /* extract tags */
-                        final Set<String> tags = new HashSet<>();
-                        for (int i = 0; i < metadata.getTagsCount(); i++) {
-                            tags.add(metadata.getTags(i));
-                        }
-                        return tags;
-                    }
-
-                    @Override
-                    public String getMimeType() {
-                        return metadata.getMimeType();
-                    }
-                };
-            } catch (final InvalidProtocolBufferException ex) {
-                throw new BlobfishDecodeException("failed to decode blob", ex);
+            /* decrypt and decode metadata */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), keyBytes, ivBytes);
+            if (!metadata.getPath().equals(path)) {
+                continue;
             }
+
+            return new MetadataImpl(metadata);
         }
 
         throw new BlobNotFoundException(path);
@@ -661,49 +651,10 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
             if (blob.getId() == blobId) {
-                /* decrypt metadata and payload */
-                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
-                final byte[] decryptedPayload = decrypt(blob.getPayload(), keyBytes, ivBytes);
-
-                try {
-                    /* parse decrypted metadata and payload */
-                    final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
-                    final BlobfishProto.Blobfish.Body.Payload payload = BlobfishProto.Blobfish.Body.Payload.parseFrom(decryptedPayload);
-
-                    return new Blob() {
-                        @Override
-                        public Metadata getMetadata() {
-                            return new Metadata() {
-                                @Override
-                                public String getPath() {
-                                    return metadata.getPath();
-                                }
-
-                                @Override
-                                public Set<String> getTags() {
-                                    /* extract tags */
-                                    final Set<String> tags = new HashSet<>();
-                                    for (int i = 0; i < metadata.getTagsCount(); i++) {
-                                        tags.add(metadata.getTags(i));
-                                    }
-                                    return tags;
-                                }
-
-                                @Override
-                                public String getMimeType() {
-                                    return metadata.getMimeType();
-                                }
-                            };
-                        }
-
-                        @Override
-                        public byte[] getPayload() {
-                            return payload.getData().toByteArray();
-                        }
-                    };
-                } catch (final InvalidProtocolBufferException ex) {
-                    throw new BlobfishDecodeException("failed to decode blob", ex);
-                }
+                /* decrypt and parse metadata and payload */
+                final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), keyBytes, ivBytes);
+                final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(blob.getPayload(), keyBytes, ivBytes);
+                return new BlobImpl(metadata, payload);
             }
         }
 
@@ -716,51 +667,14 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         Arrays.fill(ivBytes, (byte) 0);
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
-            try {
-                /* decrypt metadata and payload */
-                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
-                final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
-                if (!metadata.getPath().equals(path)) {
-                    continue;
-                }
-
-                final byte[] decryptedPayload = decrypt(blob.getPayload(), keyBytes, ivBytes);
-                final BlobfishProto.Blobfish.Body.Payload payload = BlobfishProto.Blobfish.Body.Payload.parseFrom(decryptedPayload);
-
-                return new Blob() {
-                    @Override
-                    public Metadata getMetadata() {
-                        return new Metadata() {
-                            @Override
-                            public String getPath() {
-                                return metadata.getPath();
-                            }
-
-                            @Override
-                            public Set<String> getTags() {
-                                    /* extract tags */
-                                final Set<String> tags = new HashSet<>();
-                                for (int i = 0; i < metadata.getTagsCount(); i++) {
-                                    tags.add(metadata.getTags(i));
-                                }
-                                return tags;
-                            }
-
-                            @Override
-                            public String getMimeType() {
-                                return metadata.getMimeType();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public byte[] getPayload() {
-                        return payload.getData().toByteArray();
-                    }
-                };
-            } catch (final InvalidProtocolBufferException ex) {
-                throw new BlobfishDecodeException("failed to decode blob", ex);
+            /* decrypt metadata and payload */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), keyBytes, ivBytes);
+            if (!metadata.getPath().equals(path)) {
+                continue;
             }
+
+            final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(blob.getPayload(), keyBytes, ivBytes);
+            return new BlobImpl(metadata, payload);
         }
 
         throw new BlobNotFoundException(path);
@@ -773,17 +687,9 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
             if (blob.getId() == blobId) {
-                /* decrypt metadata and payload */
-                final byte[] decryptedPayload = decrypt(blob.getPayload(), keyBytes, ivBytes);
-
-                try {
-                    /* parse decrypted payload */
-                    final BlobfishProto.Blobfish.Body.Payload payload = BlobfishProto.Blobfish.Body.Payload.parseFrom(decryptedPayload);
-
-                    return payload.getData().toByteArray();
-                } catch (final InvalidProtocolBufferException ex) {
-                    throw new BlobfishDecodeException("failed to decode blob", ex);
-                }
+                /* parse decrypted payload */
+                final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(blob.getPayload(), keyBytes, ivBytes);
+                return payload.getData().toByteArray();
             }
         }
 
@@ -796,21 +702,14 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         Arrays.fill(ivBytes, (byte) 0);
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
-            try {
-                /* decrypt metadata and payload */
-                final byte[] decryptedMetadata = decrypt(blob.getMetadata(), keyBytes, ivBytes);
-                final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
-                if (!metadata.getPath().equals(path)) {
-                    continue;
-                }
-
-                final byte[] decryptedPayload = decrypt(blob.getPayload(), keyBytes, ivBytes);
-                final BlobfishProto.Blobfish.Body.Payload payload = BlobfishProto.Blobfish.Body.Payload.parseFrom(decryptedPayload);
-
-                return payload.getData().toByteArray();
-            } catch (final InvalidProtocolBufferException ex) {
-                throw new BlobfishDecodeException("failed to decode blob", ex);
+            /* decrypt metadata and payload */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), keyBytes, ivBytes);
+            if (!metadata.getPath().equals(path)) {
+                continue;
             }
+
+            final BlobfishProto.Blobfish.Body.Payload payload = decodePayload(blob.getPayload(), keyBytes, ivBytes);
+            return payload.getData().toByteArray();
         }
 
         throw new BlobNotFoundException(path);
@@ -824,11 +723,8 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         Arrays.fill(ivBytes, (byte) 0);
 
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
-            /* decrypt metadata */
-            final byte[] decryptedMetadata = decrypt(blob.getMetadata(), key, ivBytes);
-
-            /* parse decrypted metadata */
-            final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
+            /* decrypt and parse metadata */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), key, ivBytes);
             for (final String tag : metadata.getTagsList()) {
                 result.add(tag.toLowerCase());
             }
@@ -846,11 +742,8 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
 
         final String pattern = Pattern.quote(System.getProperty("file.separator"));
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
-            /* decrypt metadata */
-            final byte[] decryptedMetadata = decrypt(blob.getMetadata(), key, ivBytes);
-
-            /* parse decrypted metadata */
-            final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
+            /* decrypt and parse metadata */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), key, ivBytes);
             final String entryPath = metadata.getPath();
             if (entryPath.startsWith(path)) {
                 final int begin = path.length();
@@ -870,63 +763,17 @@ final class ContainerDecoderV1 extends ContainerV1Base implements ContainerDecod
         final byte[] ivBytes = new byte[16];
         Arrays.fill(ivBytes, (byte) 0);
 
-        final String pattern = Pattern.quote(System.getProperty("file.separator"));
         for (final BlobfishProto.Blobfish.Body.Blob blob : blobFish.getBody().getBlobList()) {
-            /* decrypt metadata */
-            final byte[] decryptedMetadata = decrypt(blob.getMetadata(), key, ivBytes);
-
-            /* parse decrypted metadata */
-            final BlobfishProto.Blobfish.Body.Metadata metadata = BlobfishProto.Blobfish.Body.Metadata.parseFrom(decryptedMetadata);
+            /* decrypt and decode metadata */
+            final BlobfishProto.Blobfish.Body.Metadata metadata = decodeMetadata(blob.getMetadata(), key, ivBytes);
             final ProtocolStringList blobTags = metadata.getTagsList();
             for (final String tag : tags) {
                 if (blobTags.contains(tag)) {
                     result.add(metadata.getPath());
-                    continue;
                 }
             }
         }
 
         return result;
-    }
-
-    private byte[] decrypt(final BlobfishProto.Blobfish.Body.Entry entry, final byte[] keyBytes, final byte[] ivBytes) throws BlobfishCryptoException, BlobfishDecodeException {
-        final byte[] ciphertext = entry.getCiphertext().toByteArray();
-        final byte[] hmac = entry.getHmac().toByteArray();
-        final byte[] signature = entry.getSignature().toByteArray();
-
-        try {
-            /* initialize cipher */
-            final Cipher cipher = getCipher(Cipher.DECRYPT_MODE, keyBytes, ivBytes);
-            final Mac macCalculator = getMac(keyBytes);
-
-            /* initialize signer */
-            final Signature signer = getSigner(signingCertificate);
-
-            final byte[] buffer = new byte[8192];
-            try (final ByteArrayInputStream bais = new ByteArrayInputStream(ciphertext);
-                 final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                 final CipherInputStream cis = new CipherInputStream(bais, cipher)) {
-
-                /* decrypt, update mac-calculator and signature-verifier */
-                int r;
-                while ((r = cis.read(buffer)) != -1) {
-                    baos.write(buffer, 0, r);
-                    macCalculator.update(buffer, 0, r);
-                    signer.update(buffer, 0, r);
-                }
-
-                if (!Arrays.equals(macCalculator.doFinal(), hmac)) {
-                    throw new IncorrectDecryptionKeyException();
-                } else if (!signer.verify(signature)) {
-                    throw new NotAuthenticatedException();
-                }
-
-                return baos.toByteArray();
-            }
-        } catch (final IOException ex) {
-            throw new BlobfishDecodeException("failed to decode blob", ex);
-        } catch (final SignatureException ex) {
-            throw new SignVerificationException(ex);
-        }
     }
 }

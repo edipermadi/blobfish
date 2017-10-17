@@ -7,14 +7,14 @@ import org.testng.Reporter;
  *
  * @author Edi Permadi
  */
-abstract class AbstractTest {
+public abstract class AbstractTest {
     /**
      * Log to testNG reporter
      *
      * @param format message format
      * @param args   message parameters
      */
-    void log(String format, Object... args) {
+    public void log(String format, Object... args) {
         Reporter.log(String.format(format, args), true);
     }
 }

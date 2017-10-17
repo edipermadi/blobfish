@@ -1,5 +1,6 @@
-package com.github.edipermadi.security.blobfish;
+package com.github.edipermadi.security.blobfish.v1;
 
+import com.github.edipermadi.security.blobfish.AbstractTest;
 import com.github.edipermadi.security.blobfish.codec.ContainerEncoder;
 import com.github.edipermadi.security.blobfish.codec.ContainerEncoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
@@ -12,13 +13,15 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.testng.Assert;
-import org.testng.Reporter;
 import org.testng.annotations.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.security.*;
@@ -54,14 +57,14 @@ public final class ContainerEncodingTest extends AbstractTest {
 
     @BeforeMethod
     public void beforeMethod(final Method method) {
-        Reporter.log("========================================", true);
-        Reporter.log(method.getName(), true);
-        Reporter.log("========================================", true);
+        log("========================================");
+        log(method.getName());
+        log("========================================");
     }
 
     @AfterMethod
     public void afterMethod() {
-        Reporter.log("", true);
+        log("");
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -624,7 +627,7 @@ public final class ContainerEncodingTest extends AbstractTest {
             "image5",
             "image6",
             "image7",
-            "blobfish-path"})
+            "blobfish-path-v1"})
     @Test
     public void testEncode(final String entryPassword,
                            final String senderSigningAlias,

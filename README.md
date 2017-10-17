@@ -1,24 +1,48 @@
 # blobfish
 
 ## Overview
-An ugly blob container based on protobuf.
+An ugly blob container based on protobuf. The project is meant to be an educational PGP-Like tamper-proof file container.
 
 ## Features
-- Versioned container
-- Multiple blob container
-- Blob mimetype indicator
-- Blob HMAC and signature
-- Blob encryption
-- Blob Tagging
-- Blob location path (simulates storage tree view)
-- Public key based symmetric-key protection for recipient
-- Optional PBKDF2 based key protection
+- [x] Container Features
+    - [x] Versioned container
+    - [x] Multiple blob support
+    - [x] Multiple recipient support
+- [x] Content Features
+    - [x] Blob compression (GZIP)
+    - [x] Blob protection (Encryption)
+    - [x] Integrity checking (HMAC)
+    - [x] Authenticity checking (ECDSA signature)
+    - [X] Blob mimetype indicator
+    - [x] Blob tagging
+    - [x] Blob location path (simulates FS hierarchy)
+- [x] Key-Management Features
+    - [x] multiple RSA-OAEP symmetric-key protection
+    - [ ] Multiple PBKDF2 based symmetric key protection
+    - [x] Optional PBKDF2 based master-symmetric-key derivation
+- [x] Blob Discovery Features
+    - [x] Tag listing
+    - [x] Directory listing
+    - [x] Open plob by Id
+    - [x] Open plob by path
+    - [x] List blob by tags
+    - [x] List blob by partial/full path
+- [ ] BlobPool, a mutable intermediate container
+    - [ ] Import from blobfish container
+    - [ ] Export to blobfish container
+    - [ ] Recipient CRUD access
+    - [ ] Bob CRUD access
+
+## Blobfish Random Facts
+- [The Ugliest Animal](https://www.theguardian.com/environment/2013/sep/12/blobfish-world-ugliest-animal)
+- [Blobby the Blobfish](http://thelastblobfish.tumblr.com/) 
 
 ## Documentation
 - [Container Indentification](doc/identification.md)
 - [Container Format Definition](src/main/proto/blobfish.proto)
 - [Algorithms](doc/ciphersuite.md)
 - [Exception Model](doc/exception-model.md)
+- [Database](doc/database.md)
 - [Usage](doc/usage.md)
 
 ## Test Resources

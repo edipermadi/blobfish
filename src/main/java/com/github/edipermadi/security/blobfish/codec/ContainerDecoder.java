@@ -7,6 +7,7 @@ import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -240,4 +241,25 @@ public interface ContainerDecoder {
      * @throws BlobfishDecodeException when container decoding failed
      */
     Set<String> listByTags(Set<String> tags, X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blobs by password
+     *
+     * @param password decryption password
+     * @return iterator of blobs
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when container decoding failed
+     */
+    Iterator<Blob> getBlobs(String password) throws BlobfishDecodeException, BlobfishCryptoException;
+
+    /**
+     * Get blobs by certificate and private key
+     *
+     * @param certificate certificate to identify correct protected-key entry
+     * @param privateKey  private key to decrypt protected-key entry
+     * @return iterator of blobs
+     * @throws BlobfishDecodeException when container decoding failed
+     * @throws BlobfishCryptoException when container decoding failed
+     */
+    Iterator<Blob> getBlobs(X509Certificate certificate, PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException;
 }
