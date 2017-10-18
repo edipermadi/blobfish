@@ -7,6 +7,10 @@
 - Fixed duplicated blob path
 - Fixed duplicated recipient certificate
 
+**New Features**
+
+- Create tag
+
 ## v2.0.0 [October 17, 2017]
 
 **New Features**
