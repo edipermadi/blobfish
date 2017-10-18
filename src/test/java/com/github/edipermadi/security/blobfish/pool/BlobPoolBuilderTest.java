@@ -212,6 +212,57 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void removeTagById() throws SQLException {
+        final String tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+        final UUID tagId = blobPool.createTag(tagVal);
+
+        /* make sure new tag is there */
+        Assert.assertTrue(getAllTags(blobPool).contains(tagVal));
+
+        /* add tag to all blobs */
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                Assert.assertTrue(added);
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* make sure association is there */
+        empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertTrue(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* remove there */
+        blobPool.removeTag(tagId);
+
+        /* make sure association is removed */
+        empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertFalse(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* make sure tag has been removed */
+        Assert.assertFalse(getAllTags(blobPool).contains(tagVal));
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {

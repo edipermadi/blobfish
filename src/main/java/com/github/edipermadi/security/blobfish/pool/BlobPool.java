@@ -105,6 +105,14 @@ public interface BlobPool {
     boolean updateTag(UUID tagId, String tag) throws SQLException;
 
     /**
+     * Remove a tag
+     * @param tagId tag identifier
+     * @return true when tag deleted successfully
+     * @throws SQLException when updating tag failed
+     */
+    boolean removeTag(UUID tagId) throws SQLException;
+
+    /**
      * Add tag to a blob
      *
      * @param blobId blob identifier

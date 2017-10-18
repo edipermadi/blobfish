@@ -10,6 +10,7 @@
 **New Features**
 
 - Create tag
+- Remove tag
 - Get tag value by `tag-uuid`
 - Update tag by `tag-uuid`
 - Add tag to blob by `blob-uuid` and `tag-uuid`
