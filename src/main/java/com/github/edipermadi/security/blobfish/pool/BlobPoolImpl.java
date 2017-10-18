@@ -233,6 +233,22 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public boolean removeTagFromBlob(final UUID blobId, final UUID tagId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        } else if (tagId == null) {
+            throw new IllegalArgumentException("invalid tag identifier");
+        }
+
+        final String query = queries.getProperty("SQL_REMOVE_TAG_BY_BLOB_ID_AND_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            preparedStatement.setString(2, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
     public byte[] getBlobPayload(UUID blobId) throws SQLException, IOException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");

@@ -105,6 +105,16 @@ public interface BlobPool {
     boolean addTagToBlob(UUID blobId, UUID tagId) throws SQLException;
 
     /**
+     * Remove tag from a blob
+     *
+     * @param blobId blob identifier
+     * @param tagId  tag identifier
+     * @return true when removed successfully
+     * @throws SQLException when de-assigning tag failed
+     */
+    boolean removeTagFromBlob(UUID blobId, UUID tagId) throws SQLException;
+
+    /**
      * Get blob payload
      *
      * @param blobId blob identifier

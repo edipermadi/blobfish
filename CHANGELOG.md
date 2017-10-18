@@ -11,7 +11,8 @@
 
 - Create tag
 - Get tag value by `tag-uuid`
-- Assign tag to blob by `blob-uuid` and `tag-uuid`
+- Add tag to blob by `blob-uuid` and `tag-uuid`
+- Remove tag from blob by `blob-uuid` and `tag-uuid`
 
 ## v2.0.0 [October 17, 2017]
 
@@ -20,7 +21,7 @@
 - Create `BlobPool` from existing blobfish container
 - List blobs within `BlobPool`
 - List tags within `BlobPool`
-- List associated to a blob
+- List tags associated to a blob
 
 ## v1.1.0 [October 4, 2017]
 
