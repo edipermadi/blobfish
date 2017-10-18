@@ -153,7 +153,7 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_TAGS");
+        final String query = queries.getProperty("SQL_GET_BLOB_TAGS_BY_BLOB_UUID");
         /* execute query */
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
@@ -184,7 +184,7 @@ final class BlobPoolImpl implements BlobPool {
             }
         }
 
-        final String queryGet = queries.getProperty("SQL_GET_TAG_UUID_BY_TAG");
+        final String queryGet = queries.getProperty("SQL_GET_TAG_UUID_BY_TAG_VALUE");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(queryGet)) {
             preparedStatement.setString(1, value);
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -198,12 +198,28 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public boolean addTag(final UUID blobId, final UUID tagId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        } else if (tagId == null) {
+            throw new IllegalArgumentException("invalid tag identifier");
+        }
+
+        final String query = queries.getProperty("SQL_ADD_TAG_BY_BLOB_ID_AND_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            preparedStatement.setString(2, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
     public byte[] getPayload(UUID blobId) throws SQLException, IOException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_BLOB");
+        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
         /* execute query */
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());

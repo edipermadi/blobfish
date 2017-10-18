@@ -86,6 +86,16 @@ public interface BlobPool {
     UUID createTag(String tag) throws SQLException;
 
     /**
+     * Add tag to a blob
+     *
+     * @param blobId blob identifier
+     * @param tagId  tag identifier
+     * @return true when added successfully
+     * @throws SQLException when assigning tag failed
+     */
+    boolean addTag(UUID blobId, UUID tagId) throws SQLException;
+
+    /**
      * Get blob payload
      *
      * @param blobId blob identifier

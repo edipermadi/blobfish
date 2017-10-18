@@ -31,6 +31,7 @@ import java.util.*;
 public final class BlobPoolBuilderTest extends AbstractTest {
     private KeyStore keyStore;
     private BlobPool blobPool;
+    private Map<UUID, String> newTags = new HashMap<>();
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
@@ -119,16 +120,58 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testCreateTag() throws SQLException {
-        final String newTag = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+        final String newTagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
 
         /* compare tags before and after */
         final Set<String> originalTags = getAllTags(blobPool);
-        final UUID tagUuid = blobPool.createTag(newTag);
+        final UUID newTagId = blobPool.createTag(newTagVal);
         final Set<String> updatedTags = getAllTags(blobPool);
 
-        Assert.assertFalse(originalTags.contains(newTag), String.format("%s should NOT in [%s]", newTag, Joiner.on(", ").join(originalTags)));
-        Assert.assertTrue(updatedTags.contains(newTag), String.format("%s should in found [%s]", newTag, Joiner.on(", ").join(originalTags)));
-        log("tag-uuid : %s", tagUuid);
+        Assert.assertFalse(originalTags.contains(newTagVal), String.format("%s should NOT in [%s]", newTagVal, Joiner.on(", ").join(originalTags)));
+        Assert.assertTrue(updatedTags.contains(newTagVal), String.format("%s should in found [%s]", newTagVal, Joiner.on(", ").join(originalTags)));
+        log("tag-uuid : %s", newTagId);
+
+        /* store tag */
+        newTags.put(newTagId, newTagVal);
+    }
+
+    @Test(dependsOnMethods = {"testCreateTag"})
+    public void assignTagByBlobIdAndTagId() throws SQLException {
+        boolean empty = false;
+
+        /* make sure its not empty */
+        Assert.assertFalse(newTags.isEmpty());
+
+        /* pick first entry */
+        UUID tagId = null;
+        String tagVal = null;
+        for (Map.Entry<UUID, String> entry : newTags.entrySet()) {
+            tagId = entry.getKey();
+            tagVal = entry.getValue();
+            break;
+        }
+
+        /* add tag to all blobs */
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final boolean added = blobPool.addTag(blobId, tagId);
+                Assert.assertTrue(added);
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* ensure that blobs have that tag */
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getTags(blobId);
+                Assert.assertTrue(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})

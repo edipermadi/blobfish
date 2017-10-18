@@ -10,6 +10,7 @@
 **New Features**
 
 - Create tag
+- Assign tag to blob by `blob-uuid` and `tag-uuid`
 
 ## v2.0.0 [October 17, 2017]
 
