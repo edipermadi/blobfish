@@ -119,6 +119,15 @@ public final class ContainerEncodingTest extends AbstractTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
+    @Parameters({"keystore-alias-enc-receiver1"})
+    public void whenDuplicateEncryptionCertificateIsGivenThenExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+        new ContainerEncoderBuilder()
+                .addRecipientCertificate(certificate)
+                .addRecipientCertificate(certificate);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void whenNullPasswordIsGivenThenExceptionThrown() {
         new ContainerEncoderBuilder()
                 .setPassword(null);
