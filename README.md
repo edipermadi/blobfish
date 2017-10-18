@@ -28,7 +28,7 @@ An ugly blob container based on protobuf. The project is meant to be an educatio
     - [x] List blob by tags
     - [x] List blob by partial/full path
 - [ ] BlobPool, a mutable intermediate container
-    - [ ] Import from blobfish container
+    - [x] Import from blobfish container
     - [ ] Export to blobfish container
     - [ ] Recipient CRUD access
     - [ ] Blob CRUD access
