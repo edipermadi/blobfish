@@ -108,7 +108,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListTags() throws SQLException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.listTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 log("found entry");
                 log("  uuid : %s", entry.getKey());
@@ -140,7 +140,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* make sure its not empty */
         Assert.assertFalse(newTags.isEmpty());
 
-        for(final Map.Entry<UUID, String> entry : newTags.entrySet()){
+        for (final Map.Entry<UUID, String> entry : newTags.entrySet()) {
             final UUID tagId = entry.getKey();
             final String tagVal = entry.getValue();
 
@@ -157,31 +157,28 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         Assert.assertFalse(newTags.isEmpty());
 
         /* pick first entry */
-        UUID tagId = null;
-        String tagVal = null;
-        for (final Map.Entry<UUID, String> entry : newTags.entrySet()) {
-            tagId = entry.getKey();
-            tagVal = entry.getValue();
-            break;
-        }
+        final Map.Entry<UUID, String> first = newTags.entrySet().iterator().next();
+        final UUID tagId = first.getKey();
+        final String tagVal = first.getValue();
 
         /* add tag to all blobs */
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.addTag(blobId, tagId);
+                final boolean added = blobPool.addTagToBlob(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();
         }
 
         /* ensure that blobs have that tag */
+        empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Set<String> tags = blobPool.getTags(blobId);
+                final Set<String> tags = blobPool.getBlobTags(blobId);
                 Assert.assertTrue(tags.contains(tagVal));
             }
             empty = entries.isEmpty();
@@ -192,11 +189,11 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
-                final Set<String> tags = blobPool.getTags(entry.getKey());
-                final byte[] payload = blobPool.getPayload(entry.getKey());
+                final Set<String> tags = blobPool.getBlobTags(entry.getKey());
+                final byte[] payload = blobPool.getBlobPayload(entry.getKey());
 
                 log("found entry");
                 log("  uuid      : %s", entry.getKey());
@@ -226,7 +223,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         final Set<String> tags = new HashSet<>();
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> entries = blobPool.listTags(page, 10);
+            final Map<UUID, String> entries = blobPool.listAvailableTags(page, 10);
             for (final Map.Entry<UUID, String> entry : entries.entrySet()) {
                 tags.add(entry.getValue());
             }
