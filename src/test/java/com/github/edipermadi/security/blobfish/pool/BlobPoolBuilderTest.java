@@ -5,6 +5,8 @@ import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import com.google.common.base.Joiner;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Parameters;
@@ -19,9 +21,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Blob Pool Builder Unit Test
@@ -118,6 +118,20 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testCreateTag() throws SQLException {
+        final String newTag = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+
+        /* compare tags before and after */
+        final Set<String> originalTags = getAllTags(blobPool);
+        final UUID tagUuid = blobPool.createTag(newTag);
+        final Set<String> updatedTags = getAllTags(blobPool);
+
+        Assert.assertFalse(originalTags.contains(newTag), String.format("%s should NOT in [%s]", newTag, Joiner.on(", ").join(originalTags)));
+        Assert.assertTrue(updatedTags.contains(newTag), String.format("%s should in found [%s]", newTag, Joiner.on(", ").join(originalTags)));
+        log("tag-uuid : %s", tagUuid);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
@@ -142,5 +156,26 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             }
             empty = blobs.isEmpty();
         }
+    }
+
+    /**
+     * List all tags from blob-pool
+     *
+     * @param blobPool blob pool
+     * @return set of tags
+     * @throws SQLException when BlobPool access failed
+     */
+    private Set<String> getAllTags(final BlobPool blobPool) throws SQLException {
+        final Set<String> tags = new HashSet<>();
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> entries = blobPool.listTags(page, 10);
+            for (final Map.Entry<UUID, String> entry : entries.entrySet()) {
+                tags.add(entry.getValue());
+            }
+            empty = entries.isEmpty();
+        }
+
+        return tags;
     }
 }

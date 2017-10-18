@@ -170,6 +170,34 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public UUID createTag(final String tag) throws SQLException {
+        if ((tag == null) || tag.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid tag");
+        }
+
+        final String value = tag.toLowerCase();
+        final String queryMerge = queries.getProperty("SQL_MERGE_TAG");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(queryMerge)) {
+            preparedStatement.setString(1, value);
+            if (preparedStatement.executeUpdate() == 0) {
+                throw new SQLException("failed to create tag");
+            }
+        }
+
+        final String queryGet = queries.getProperty("SQL_GET_TAG_UUID_BY_TAG");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(queryGet)) {
+            preparedStatement.setString(1, value);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new IllegalStateException("failed to get created tag");
+            }
+
+            final String uuidStr = resultSet.getString("uuid");
+            return UUID.fromString(uuidStr);
+        }
+    }
+
+    @Override
     public byte[] getPayload(UUID blobId) throws SQLException, IOException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
