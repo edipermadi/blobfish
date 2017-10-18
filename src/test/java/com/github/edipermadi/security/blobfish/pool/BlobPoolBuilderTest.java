@@ -134,6 +134,22 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testCreateTag"})
+    public void testUpdateTag() throws SQLException {
+        tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+
+        /* check before update */
+        final Set<String> originalTags = getAllTags(blobPool);
+        Assert.assertFalse(originalTags.contains(tagVal), String.format("%s should NOT in [%s]", tagVal, Joiner.on(", ").join(originalTags)));
+
+        /* update and compare */
+        Assert.assertTrue(blobPool.updateTag(tagId, tagVal));
+        final Set<String> updatedTags = getAllTags(blobPool);
+        Assert.assertTrue(updatedTags.contains(tagVal), String.format("%s should in found [%s]", tagVal, Joiner.on(", ").join(originalTags)));
+
+        log("tag-uuid : %s", tagId);
+    }
+
+    @Test(dependsOnMethods = {"testUpdateTag"})
     public void getTagValueByTagId() throws SQLException {
         final String value = blobPool.getTag(tagId);
         Assert.assertEquals(value, tagVal);

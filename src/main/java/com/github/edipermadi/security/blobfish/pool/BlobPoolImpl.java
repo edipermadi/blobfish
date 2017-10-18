@@ -189,6 +189,40 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public boolean updateTag(final UUID tagId, final String tag) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("tagId is null");
+        } else if (tag.trim().isEmpty()) {
+            throw new IllegalArgumentException("tag is invalid");
+        }
+
+        /* make it lowercase */
+        final String value = tag.toLowerCase();
+
+        /* check if new value is exist */
+        final String countTagByValueQuery = queries.getProperty("SQL_COUNT_TAG_BY_VALUE");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(countTagByValueQuery)) {
+            preparedStatement.setString(1, value);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new IllegalStateException(String.format("failed to check existence of tag '%s'", tag));
+            }
+
+            if (resultSet.getLong("count") > 0) {
+                return false;
+            }
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_UPDATE_TAG_VALUE_BY_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, value);
+            preparedStatement.setString(2, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
     public UUID createTag(final String tag) throws SQLException {
         if ((tag == null) || tag.trim().isEmpty()) {
             throw new IllegalArgumentException("invalid tag");

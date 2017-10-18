@@ -11,6 +11,7 @@
 
 - Create tag
 - Get tag value by `tag-uuid`
+- Update tag by `tag-uuid`
 - Add tag to blob by `blob-uuid` and `tag-uuid`
 - Remove tag from blob by `blob-uuid` and `tag-uuid`
 
