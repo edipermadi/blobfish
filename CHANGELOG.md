@@ -1,5 +1,12 @@
 # Blobfish Changelog
 
+## v2.1.0-SNAPSHOT
+
+**Bugfix**
+
+- Fixed duplicated blob path
+- Fixed duplicated recipient certificate
+
 ## v2.0.0 [October 17, 2017]
 
 **New Features**
