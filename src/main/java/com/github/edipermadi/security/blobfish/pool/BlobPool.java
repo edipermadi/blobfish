@@ -48,24 +48,24 @@ public interface BlobPool {
     void importPayload(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 
     /**
-     * List tags
+     * List available tags
      *
      * @param page number starts from 1
      * @param size page size at least 1
      * @return map of tag id and string
      * @throws SQLException when reading tags failed
      */
-    Map<UUID, String> listTags(int page, int size) throws SQLException;
+    Map<UUID, String> listAvailableTags(int page, int size) throws SQLException;
 
     /**
-     * List blobs
+     * List available blobs
      *
      * @param page number starts from 1
      * @param size page size at least 1
      * @return map of blob uuid and corresponding metadata
      * @throws SQLException when reading blob failed
      */
-    Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException;
+    Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException;
 
     /**
      * Get tags of a particular blob
@@ -74,7 +74,63 @@ public interface BlobPool {
      * @return set of tags
      * @throws SQLException when reading tags failed
      */
-    Set<String> getTags(UUID blobId) throws SQLException;
+    Set<String> getBlobTags(UUID blobId) throws SQLException;
+
+    /**
+     * Create a new tag
+     *
+     * @param tag new tag to be created
+     * @return UUID of new or existing tag
+     * @throws SQLException when inserting tag failed
+     */
+    UUID createTag(String tag) throws SQLException;
+
+    /**
+     * Get tag value by tag uuid
+     *
+     * @param tagId tag identifier
+     * @return tag value
+     * @throws SQLException when fetching tag value failed
+     */
+    String getTag(UUID tagId) throws SQLException;
+
+    /**
+     * Remove a tag
+     *
+     * @param tagId tag identifier
+     * @param tag   new value of tag
+     * @return true when updated successfully
+     * @throws SQLException when updating tag failed
+     */
+    boolean updateTag(UUID tagId, String tag) throws SQLException;
+
+    /**
+     * Remove a tag
+     * @param tagId tag identifier
+     * @return true when tag deleted successfully
+     * @throws SQLException when updating tag failed
+     */
+    boolean removeTag(UUID tagId) throws SQLException;
+
+    /**
+     * Add tag to a blob
+     *
+     * @param blobId blob identifier
+     * @param tagId  tag identifier
+     * @return true when added successfully
+     * @throws SQLException when assigning tag failed
+     */
+    boolean addTagToBlob(UUID blobId, UUID tagId) throws SQLException;
+
+    /**
+     * Remove tag from a blob
+     *
+     * @param blobId blob identifier
+     * @param tagId  tag identifier
+     * @return true when removed successfully
+     * @throws SQLException when de-assigning tag failed
+     */
+    boolean removeTagFromBlob(UUID blobId, UUID tagId) throws SQLException;
 
     /**
      * Get blob payload
@@ -84,5 +140,5 @@ public interface BlobPool {
      * @throws SQLException when reading payload failed
      * @throws IOException  when reading blob payload failed
      */
-    byte[] getPayload(UUID blobId) throws SQLException, IOException;
+    byte[] getBlobPayload(UUID blobId) throws SQLException, IOException;
 }

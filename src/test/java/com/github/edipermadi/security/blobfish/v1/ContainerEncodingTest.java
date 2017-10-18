@@ -119,6 +119,15 @@ public final class ContainerEncodingTest extends AbstractTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
+    @Parameters({"keystore-alias-enc-receiver1"})
+    public void whenDuplicateEncryptionCertificateIsGivenThenExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+        new ContainerEncoderBuilder()
+                .addRecipientCertificate(certificate)
+                .addRecipientCertificate(certificate);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void whenNullPasswordIsGivenThenExceptionThrown() {
         new ContainerEncoderBuilder()
                 .setPassword(null);
@@ -518,6 +527,69 @@ public final class ContainerEncodingTest extends AbstractTest {
         }
     }
 
+    @Parameters({"keystore-entry-password",
+            "keystore-alias-sig-sender",
+            "keystore-alias-enc-sender",
+            "keystore-alias-enc-receiver1",
+            "keystore-alias-enc-receiver2",
+            "blobfish-password",
+            "image1",
+            "image2",
+            "image3",
+            "image4",
+            "image5",
+            "image6",
+            "image7"})
+    @Test(expectedExceptions = BlobfishEncodeException.class)
+    public void whenBlobExistsThenAddingBlobThrowsException(final String entryPassword,
+                                                            final String senderSigningAlias,
+                                                            final String senderEncryptionAlias,
+                                                            final String recipient1EncryptionAlias,
+                                                            final String recipient2EncryptionAlias,
+                                                            final String password,
+                                                            final String path1,
+                                                            final String path2,
+                                                            final String path3,
+                                                            final String path4,
+                                                            final String path5,
+                                                            final String path6,
+                                                            final String path7) throws BlobfishCryptoException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, BlobfishEncodeException {
+        final Set<String> tags = new HashSet<>();
+        tags.add("fish");
+        tags.add("deep-sea");
+
+        final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
+        final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
+        final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
+        final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
+        final X509Certificate recipient2EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient2EncryptionAlias);
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            final ContainerEncoder encoder = new ContainerEncoderBuilder()
+                    .setSigningKey(privateKey)
+                    .setSigningCertificate(senderSigningCertificate)
+                    .addRecipientCertificate(senderEncryptionCertificate)
+                    .addRecipientCertificate(recipient1EncryptionCertificate)
+                    .addRecipientCertificate(recipient2EncryptionCertificate)
+                    .setPassword(password)
+                    .setOutputStream(baos)
+                    .build();
+
+            /* repeat adding the same blob twice and make sure exception triggered */
+            for (int i = 0; i < 2; i++) {
+                addBlob(encoder, path1, tags);
+                addBlob(encoder, path2, tags);
+                addBlob(encoder, path3, tags);
+                addBlob(encoder, path4, tags);
+                addBlob(encoder, path5, tags);
+                addBlob(encoder, path6, tags);
+                addBlob(encoder, path7, tags);
+            }
+
+            encoder.write();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     //------------------------------------------------------------------------------------------------------------------
     // Positive Test Cases

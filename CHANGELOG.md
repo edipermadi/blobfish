@@ -1,5 +1,21 @@
 # Blobfish Changelog
 
+## v2.1.0 [October 19, 2017]
+
+**Bugfix**
+
+- Fixed duplicated blob path
+- Fixed duplicated recipient certificate
+
+**New Features**
+
+- Create tag
+- Remove tag
+- Get tag value by `tag-uuid`
+- Update tag by `tag-uuid`
+- Add tag to blob by `blob-uuid` and `tag-uuid`
+- Remove tag from blob by `blob-uuid` and `tag-uuid`
+
 ## v2.0.0 [October 17, 2017]
 
 **New Features**
@@ -7,7 +23,7 @@
 - Create `BlobPool` from existing blobfish container
 - List blobs within `BlobPool`
 - List tags within `BlobPool`
-- List associated to a blob
+- List tags associated to a blob
 
 ## v1.1.0 [October 4, 2017]
 

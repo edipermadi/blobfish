@@ -1,9 +1,6 @@
 package com.github.edipermadi.security.blobfish.codec;
 
-import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
-import com.github.edipermadi.security.blobfish.exc.BlobfishEncodeException;
-import com.github.edipermadi.security.blobfish.exc.KeyDerivationException;
-import com.github.edipermadi.security.blobfish.exc.SignCalculationException;
+import com.github.edipermadi.security.blobfish.exc.*;
 import com.github.edipermadi.security.blobfish.generated.BlobfishProto;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
@@ -15,7 +12,10 @@ import javax.crypto.Mac;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Set;
@@ -99,13 +99,15 @@ class ContainerEncoderV1 extends ContainerEncoderBase implements ContainerEncode
     public ContainerEncoderV1 addBlob(final String path, final Set<String> tags, final String mimeType,
                                       final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException, IOException {
         if ((path == null) || path.isEmpty() || path.endsWith("/") || !path.startsWith("/")) {
-            throw new IllegalArgumentException("illegal path");
+            throw new IllegalArgumentException("invalid path");
         } else if (tags == null) {
             throw new IllegalArgumentException("tags is null");
         } else if ((mimeType == null) || mimeType.isEmpty()) {
             throw new IllegalArgumentException("mimetype is null/empty");
         } else if (inputStream == null) {
             throw new IllegalArgumentException("input-stream is null/empty");
+        } else if (paths.contains(path)) {
+            throw new BlobAlreadyExistException();
         }
 
         /* encode metadata and payload */
@@ -126,6 +128,7 @@ class ContainerEncoderV1 extends ContainerEncoderBase implements ContainerEncode
                     .setPayload(payload)
                     .build();
             bodyBuilder.addBlob(blob);
+            paths.add(path);
         } catch (final IOException ex) {
             throw new BlobfishEncodeException("failed to encode blob", ex);
         }

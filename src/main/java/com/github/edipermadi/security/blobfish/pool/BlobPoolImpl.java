@@ -74,7 +74,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, String> listTags(final int page, final int size) throws SQLException {
+    public Map<UUID, String> listAvailableTags(final int page, final int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -83,7 +83,7 @@ final class BlobPoolImpl implements BlobPool {
 
         /* prepare parameters */
         final long offset = (page - 1) * size;
-        final String query = queries.getProperty("SQL_LIST_TAG");
+        final String query = queries.getProperty("SQL_SELECT_TAGS");
 
         /* execute query */
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -106,7 +106,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException {
+    public Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -148,13 +148,13 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Set<String> getTags(final UUID blobId) throws SQLException {
+    public Set<String> getBlobTags(final UUID blobId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_TAGS");
         /* execute query */
+        final String query = queries.getProperty("SQL_SELECT_BLOBS_TAGS_BY_BLOB_UUID");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -170,12 +170,146 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public byte[] getPayload(UUID blobId) throws SQLException, IOException {
+    public String getTag(final UUID tagId) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("tagId is null");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_SELECT_TAGS_VALUE_BY_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, tagId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such tag with uuid " + tagId);
+            }
+
+            return resultSet.getString("tag");
+        }
+    }
+
+    @Override
+    public boolean updateTag(final UUID tagId, final String tag) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("tagId is null");
+        } else if (tag.trim().isEmpty()) {
+            throw new IllegalArgumentException("tag is invalid");
+        }
+
+        /* make it lowercase */
+        final String value = tag.toLowerCase();
+
+        /* check if new value is exist */
+        final String countTagByValueQuery = queries.getProperty("SQL_COUNT_TAG_BY_VALUE");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(countTagByValueQuery)) {
+            preparedStatement.setString(1, value);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new IllegalStateException(String.format("failed to check existence of tag '%s'", tag));
+            }
+
+            if (resultSet.getLong("count") > 0) {
+                return false;
+            }
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_UPDATE_TAG_VALUE_BY_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, value);
+            preparedStatement.setString(2, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean removeTag(final UUID tagId) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("tagId is null");
+        }
+
+        /* remove any association to this tag */
+        final String removeBlobsTagsByTagIdQuery = queries.getProperty("SQL_REMOVE_BLOBS_TAGS_BY_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(removeBlobsTagsByTagIdQuery)) {
+            preparedStatement.setString(1, tagId.toString());
+            preparedStatement.executeUpdate();
+        }
+
+        /* remove tag by id */
+        final String removeTagsByTagIdQuery = queries.getProperty("SQL_DELETE_TAGS_BY_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(removeTagsByTagIdQuery)) {
+            preparedStatement.setString(1, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public UUID createTag(final String tag) throws SQLException {
+        if ((tag == null) || tag.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid tag");
+        }
+
+        final String value = tag.toLowerCase();
+        final String queryMerge = queries.getProperty("SQL_MERGE_TAGS_BY_TAG_VALUE");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(queryMerge)) {
+            preparedStatement.setString(1, value);
+            if (preparedStatement.executeUpdate() == 0) {
+                throw new SQLException("failed to create tag");
+            }
+        }
+
+        final String queryGet = queries.getProperty("SQL_SELECT_TAGS_UUID_BY_TAG_VALUE");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(queryGet)) {
+            preparedStatement.setString(1, value);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new IllegalStateException("failed to get created tag");
+            }
+
+            final String uuidStr = resultSet.getString("uuid");
+            return UUID.fromString(uuidStr);
+        }
+    }
+
+    @Override
+    public boolean addTagToBlob(final UUID blobId, final UUID tagId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        } else if (tagId == null) {
+            throw new IllegalArgumentException("invalid tag identifier");
+        }
+
+        final String query = queries.getProperty("SQL_INSERT_BLOBS_TAGS_BY_BLOB_ID_AND_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            preparedStatement.setString(2, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean removeTagFromBlob(final UUID blobId, final UUID tagId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        } else if (tagId == null) {
+            throw new IllegalArgumentException("invalid tag identifier");
+        }
+
+        final String query = queries.getProperty("SQL_REMOVE_BLOBS_TAGS_BY_BLOB_ID_AND_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            preparedStatement.setString(2, tagId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public byte[] getBlobPayload(UUID blobId) throws SQLException, IOException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_BLOB");
+        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
         /* execute query */
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
@@ -279,8 +413,8 @@ final class BlobPoolImpl implements BlobPool {
             }
 
             /* insert tags */
-            final String mergeTagQuery = queries.getProperty("SQL_MERGE_TAG");
-            final String insertBlobTagQuery = queries.getProperty("SQL_INSERT_BLOB_TAG");
+            final String mergeTagQuery = queries.getProperty("SQL_MERGE_TAGS_BY_TAG_VALUE");
+            final String insertBlobTagQuery = queries.getProperty("SQL_INSERT_BLOBS_TAGS_BY_BLOB_ID_AND_TAG_VALUE");
             for (final String tag : tags) {
                 try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery)) {
                     preparedStatement.setString(1, tag);

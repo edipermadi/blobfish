@@ -5,6 +5,8 @@ import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import com.google.common.base.Joiner;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Parameters;
@@ -19,9 +21,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Blob Pool Builder Unit Test
@@ -31,6 +31,8 @@ import java.util.UUID;
 public final class BlobPoolBuilderTest extends AbstractTest {
     private KeyStore keyStore;
     private BlobPool blobPool;
+    private UUID tagId;
+    private String tagVal;
 
     @BeforeClass
     @Parameters({"keystore-file-path", "keystore-file-password"})
@@ -107,7 +109,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListTags() throws SQLException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.listTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 log("found entry");
                 log("  uuid : %s", entry.getKey());
@@ -118,14 +120,157 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testCreateTag() throws SQLException {
+        tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+
+        /* compare tags before and after */
+        final Set<String> originalTags = getAllTags(blobPool);
+        tagId = blobPool.createTag(tagVal);
+        final Set<String> updatedTags = getAllTags(blobPool);
+
+        Assert.assertFalse(originalTags.contains(tagVal), String.format("%s should NOT in [%s]", tagVal, Joiner.on(", ").join(originalTags)));
+        Assert.assertTrue(updatedTags.contains(tagVal), String.format("%s should in found [%s]", tagVal, Joiner.on(", ").join(originalTags)));
+        log("tag-uuid : %s", tagId);
+    }
+
+    @Test(dependsOnMethods = {"testCreateTag"})
+    public void testUpdateTag() throws SQLException {
+        tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+
+        /* check before update */
+        final Set<String> originalTags = getAllTags(blobPool);
+        Assert.assertFalse(originalTags.contains(tagVal), String.format("%s should NOT in [%s]", tagVal, Joiner.on(", ").join(originalTags)));
+
+        /* update and compare */
+        Assert.assertTrue(blobPool.updateTag(tagId, tagVal));
+        final Set<String> updatedTags = getAllTags(blobPool);
+        Assert.assertTrue(updatedTags.contains(tagVal), String.format("%s should in found [%s]", tagVal, Joiner.on(", ").join(originalTags)));
+
+        log("tag-uuid : %s", tagId);
+    }
+
+    @Test(dependsOnMethods = {"testUpdateTag"})
+    public void getTagValueByTagId() throws SQLException {
+        final String value = blobPool.getTag(tagId);
+        Assert.assertEquals(value, tagVal);
+    }
+
+    @Test(dependsOnMethods = {"getTagValueByTagId"})
+    public void addTagToBlobByBlobIdAndTagId() throws SQLException {
+        boolean empty = false;
+
+        /* add tag to all blobs */
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                Assert.assertTrue(added);
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* ensure that blobs have that tag */
+        empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertTrue(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"addTagToBlobByBlobIdAndTagId"})
+    public void removeTagFromBlobTagByBlobIdAndTagId() throws SQLException {
+        boolean empty = false;
+
+        /* remove tag from all blobs */
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final boolean added = blobPool.removeTagFromBlob(blobId, tagId);
+                Assert.assertTrue(added);
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* ensure that those blobs don't have that tag */
+        empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertFalse(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void removeTagById() throws SQLException {
+        final String tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
+        final UUID tagId = blobPool.createTag(tagVal);
+
+        /* make sure new tag is there */
+        Assert.assertTrue(getAllTags(blobPool).contains(tagVal));
+
+        /* add tag to all blobs */
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                Assert.assertTrue(added);
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* make sure association is there */
+        empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertTrue(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* remove there */
+        blobPool.removeTag(tagId);
+
+        /* make sure association is removed */
+        empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Set<String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertFalse(tags.contains(tagVal));
+            }
+            empty = entries.isEmpty();
+        }
+
+        /* make sure tag has been removed */
+        Assert.assertFalse(getAllTags(blobPool).contains(tagVal));
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
-                final Set<String> tags = blobPool.getTags(entry.getKey());
-                final byte[] payload = blobPool.getPayload(entry.getKey());
+                final Set<String> tags = blobPool.getBlobTags(entry.getKey());
+                final byte[] payload = blobPool.getBlobPayload(entry.getKey());
 
                 log("found entry");
                 log("  uuid      : %s", entry.getKey());
@@ -142,5 +287,26 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             }
             empty = blobs.isEmpty();
         }
+    }
+
+    /**
+     * List all tags from blob-pool
+     *
+     * @param blobPool blob pool
+     * @return set of tags
+     * @throws SQLException when BlobPool access failed
+     */
+    private Set<String> getAllTags(final BlobPool blobPool) throws SQLException {
+        final Set<String> tags = new HashSet<>();
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> entries = blobPool.listAvailableTags(page, 10);
+            for (final Map.Entry<UUID, String> entry : entries.entrySet()) {
+                tags.add(entry.getValue());
+            }
+            empty = entries.isEmpty();
+        }
+
+        return tags;
     }
 }

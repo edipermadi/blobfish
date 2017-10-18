@@ -30,6 +30,7 @@ abstract class ContainerEncoderBase extends ContainerBase {
     protected final PrivateKey signingPrivateKey;
     protected final int version;
     private final boolean compressed;
+    protected Set<String> paths = new HashSet<>();
 
     /**
      * Class constructor
