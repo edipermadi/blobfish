@@ -77,6 +77,15 @@ public interface BlobPool {
     Set<String> getTags(UUID blobId) throws SQLException;
 
     /**
+     * Get tag value by tag uuid
+     *
+     * @param tagId tag identifier
+     * @return tag value
+     * @throws SQLException when fetching tag value failed
+     */
+    String getTag(UUID tagId) throws SQLException;
+
+    /**
      * Create a new tag
      *
      * @param tag new tag to be created

@@ -136,6 +136,20 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testCreateTag"})
+    public void getTagValueByTagId() throws SQLException {
+        /* make sure its not empty */
+        Assert.assertFalse(newTags.isEmpty());
+
+        for(final Map.Entry<UUID, String> entry : newTags.entrySet()){
+            final UUID tagId = entry.getKey();
+            final String tagVal = entry.getValue();
+
+            final String value = blobPool.getTag(tagId);
+            Assert.assertEquals(value, tagVal);
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateTag"})
     public void assignTagByBlobIdAndTagId() throws SQLException {
         boolean empty = false;
 
@@ -145,7 +159,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* pick first entry */
         UUID tagId = null;
         String tagVal = null;
-        for (Map.Entry<UUID, String> entry : newTags.entrySet()) {
+        for (final Map.Entry<UUID, String> entry : newTags.entrySet()) {
             tagId = entry.getKey();
             tagVal = entry.getValue();
             break;

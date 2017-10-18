@@ -153,8 +153,8 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_BLOB_TAGS_BY_BLOB_UUID");
         /* execute query */
+        final String query = queries.getProperty("SQL_GET_BLOB_TAGS_BY_BLOB_UUID");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -166,6 +166,25 @@ final class BlobPoolImpl implements BlobPool {
             }
 
             return tags;
+        }
+    }
+
+    @Override
+    public String getTag(final UUID tagId) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("tagId is null");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_GET_TAG_VALUE_BY_TAG_ID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, tagId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such tag with uuid " + tagId);
+            }
+
+            return resultSet.getString("tag");
         }
     }
 
