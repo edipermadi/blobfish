@@ -99,7 +99,7 @@ class ContainerEncoderV1 extends ContainerEncoderBase implements ContainerEncode
     public ContainerEncoderV1 addBlob(final String path, final Set<String> tags, final String mimeType,
                                       final InputStream inputStream) throws BlobfishCryptoException, BlobfishEncodeException, IOException {
         if ((path == null) || path.isEmpty() || path.endsWith("/") || !path.startsWith("/")) {
-            throw new IllegalArgumentException("illegal path");
+            throw new IllegalArgumentException("invalid path");
         } else if (tags == null) {
             throw new IllegalArgumentException("tags is null");
         } else if ((mimeType == null) || mimeType.isEmpty()) {

@@ -31,7 +31,7 @@ public final class ContainerEncoderBuilder {
      */
     public ContainerEncoderBuilder setVersion(final int version) {
         if (version < 1) {
-            throw new IllegalArgumentException("illegal version number");
+            throw new IllegalArgumentException("invalid version number");
         }
         this.version = version;
         return this;
@@ -45,7 +45,7 @@ public final class ContainerEncoderBuilder {
      */
     public ContainerEncoderBuilder setSigningCertificate(final X509Certificate signingCertificate) {
         if ((signingCertificate == null) || (!"EC".equals(signingCertificate.getPublicKey().getAlgorithm()))) {
-            throw new IllegalArgumentException("illegal signing certificate");
+            throw new IllegalArgumentException("invalid signing certificate");
         }
 
         this.signingCertificate = signingCertificate;
@@ -54,7 +54,7 @@ public final class ContainerEncoderBuilder {
 
     public ContainerEncoderBuilder setSigningKey(final PrivateKey signingPrivateKey) {
         if ((signingPrivateKey == null) || (!"EC".equals(signingPrivateKey.getAlgorithm()))) {
-            throw new IllegalArgumentException("illegal signing certificate");
+            throw new IllegalArgumentException("invalid signing certificate");
         }
 
         this.signingPrivateKey = signingPrivateKey;
@@ -69,7 +69,7 @@ public final class ContainerEncoderBuilder {
      */
     public ContainerEncoderBuilder setPassword(final String password) {
         if ((password == null) || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("illegal password");
+            throw new IllegalArgumentException("invalid password");
         }
         this.password = password.toCharArray();
         return this;
@@ -84,7 +84,9 @@ public final class ContainerEncoderBuilder {
      */
     public ContainerEncoderBuilder addRecipientCertificate(final X509Certificate certificate) {
         if ((certificate == null) || (!"RSA".equals(certificate.getPublicKey().getAlgorithm()))) {
-            throw new IllegalArgumentException("illegal signing certificate");
+            throw new IllegalArgumentException("invalid signing certificate");
+        } else if (recipientCertificates.contains(certificate)) {
+            throw new IllegalArgumentException("recipient already exist");
         }
 
         this.recipientCertificates.add(certificate);
