@@ -2,9 +2,13 @@
 
 ## v2.2.0-SNAPSHOT
 
-**New Features**
+**Enhancement**
 
 - BlobPool::getBlobTags now returns map of `tag-uuid` and `tag-value` 
+
+**New Features**
+
+- List blob by tag
 
 ## v2.1.0 [October 19, 2017]
 

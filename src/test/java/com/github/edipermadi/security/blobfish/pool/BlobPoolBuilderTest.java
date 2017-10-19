@@ -120,6 +120,40 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testListBlobByTag() throws SQLException {
+        boolean empty = false;
+
+        /* list tags */
+        final Set<UUID> tagIds = new HashSet<>();
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
+            for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
+                tagIds.add(entry.getKey());
+            }
+            empty = tags.isEmpty();
+        }
+
+        /* list blob by tags */
+        for (final UUID tagId : tagIds) {
+            empty = false;
+
+            log("listing blobs with tag %s", tagId);
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobsWithTag(tagId, page, 10);
+                for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                    final Blob.SimplifiedMetadata metadata = entry.getValue();
+
+                    log("  found entry");
+                    log("    uuid      : %s", entry.getKey());
+                    log("    mime-type : %s", metadata.getMimeType());
+                    log("    path      : %s", metadata.getPath());
+                }
+                empty = blobs.isEmpty();
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testCreateTag() throws SQLException {
         tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
 
@@ -204,7 +238,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Map<UUID,String> tags = blobPool.getBlobTags(blobId);
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
                 Assert.assertFalse(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
@@ -237,7 +271,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Map<UUID,String> tags = blobPool.getBlobTags(blobId);
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
                 Assert.assertTrue(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
@@ -252,7 +286,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Map<UUID,String> tags = blobPool.getBlobTags(blobId);
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
                 Assert.assertFalse(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
@@ -269,11 +303,11 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
-                final Map<UUID,String> tags = blobPool.getBlobTags(entry.getKey());
+                final Map<UUID, String> tags = blobPool.getBlobTags(entry.getKey());
                 final byte[] payload = blobPool.getBlobPayload(entry.getKey());
 
                 final Set<String> tagValues = new HashSet<>();
-                for(final Map.Entry<UUID, String> tag: tags.entrySet()){
+                for (final Map.Entry<UUID, String> tag : tags.entrySet()) {
                     tagValues.add(tag.getValue());
                 }
 

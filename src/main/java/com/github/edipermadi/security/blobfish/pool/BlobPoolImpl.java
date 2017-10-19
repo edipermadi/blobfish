@@ -140,7 +140,50 @@ final class BlobPoolImpl implements BlobPool {
                         return mimetype;
                     }
                 });
+            }
 
+            return blobs;
+        }
+    }
+
+    @Override
+    public Map<UUID, Blob.SimplifiedMetadata> listBlobsWithTag(final UUID tagId, final int page, final int size) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("invalid tag identifier");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final String query = queries.getProperty("SQL_LIST_BLOB_WITH_TAG_UUID");
+
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, tagId.toString());
+            preparedStatement.setLong(2, offset);
+            preparedStatement.setLong(3, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            /* read results */
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String path = resultSet.getString("path");
+                final String mimetype = resultSet.getString("mimetype");
+                blobs.put(UUID.fromString(uuid), new Blob.SimplifiedMetadata() {
+                    @Override
+                    public String getPath() {
+                        return path;
+                    }
+
+                    @Override
+                    public String getMimeType() {
+                        return mimetype;
+                    }
+                });
             }
 
             return blobs;

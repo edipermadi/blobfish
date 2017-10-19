@@ -68,6 +68,16 @@ public interface BlobPool {
     Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException;
 
     /**
+     * List blobs which has given tag
+     * @param tagId tag identifier
+     * @param page number starts from 1
+     * @param size page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> listBlobsWithTag(UUID tagId, int page, int size) throws SQLException;
+
+    /**
      * Get tags of a particular blob
      *
      * @param blobId blob identifier
