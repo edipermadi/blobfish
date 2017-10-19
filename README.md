@@ -4,6 +4,7 @@
 An ugly blob container based on protobuf. The project is meant to be an educational PGP-Like tamper-proof file container.
 
 ![Blobby Twerkin](src/test/resources/twerkin.gif)
+
 Image courtesy of [Blobby the Blobfish](http://thelastblobfish.tumblr.com/)
 
 ## Features
