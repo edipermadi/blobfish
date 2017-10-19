@@ -148,7 +148,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Set<String> getBlobTags(final UUID blobId) throws SQLException {
+    public Map<UUID, String> getBlobTags(final UUID blobId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
@@ -159,10 +159,11 @@ final class BlobPoolImpl implements BlobPool {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
 
-            final Set<String> tags = new HashSet<>();
+            final Map<UUID, String> tags = new HashMap<>();
             while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
                 final String tag = resultSet.getString("tag");
-                tags.add(tag);
+                tags.put(UUID.fromString(uuid), tag);
             }
 
             return tags;

@@ -4,7 +4,7 @@
 
 **New Features**
 
-- TBD 
+- BlobPool::getBlobTags now returns map of `tag-uuid` and `tag-value` 
 
 ## v2.1.0 [October 19, 2017]
 

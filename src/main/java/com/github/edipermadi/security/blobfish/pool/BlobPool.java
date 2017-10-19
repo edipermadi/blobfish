@@ -71,10 +71,10 @@ public interface BlobPool {
      * Get tags of a particular blob
      *
      * @param blobId blob identifier
-     * @return set of tags
+     * @return map of tag-uuid and its value
      * @throws SQLException when reading tags failed
      */
-    Set<String> getBlobTags(UUID blobId) throws SQLException;
+    Map<UUID,String> getBlobTags(UUID blobId) throws SQLException;
 
     /**
      * Create a new tag
