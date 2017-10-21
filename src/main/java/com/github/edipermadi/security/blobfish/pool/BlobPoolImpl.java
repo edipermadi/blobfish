@@ -10,6 +10,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.*;
@@ -364,6 +365,26 @@ final class BlobPoolImpl implements BlobPool {
             }
             final InputStream inputStream = resultSet.getBinaryStream("payload");
             return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public boolean createRecipient(final String name, final String metadata, final X509Certificate certificate) throws SQLException, CertificateEncodingException {
+        if ((name == null) || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("recipient name is null/empty");
+        } else if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        }
+
+        final String query = queries.getProperty("SQL_INSERT_INTO_RECIPIENTS");
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(certificate.getEncoded());
+             final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, name);
+            preparedStatement.setString(2, metadata);
+            preparedStatement.setBinaryStream(3, bais);
+            return preparedStatement.executeUpdate() > 0;
+        } catch (final IOException ex) {
+            throw new CertificateEncodingException(ex);
         }
     }
 

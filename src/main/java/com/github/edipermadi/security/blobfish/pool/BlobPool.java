@@ -7,11 +7,11 @@ import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -69,9 +69,10 @@ public interface BlobPool {
 
     /**
      * List blobs which has given tag
+     *
      * @param tagId tag identifier
-     * @param page number starts from 1
-     * @param size page size at least 1
+     * @param page  number starts from 1
+     * @param size  page size at least 1
      * @return map of blob uuid and corresponding metadata
      * @throws SQLException when reading blob failed
      */
@@ -84,7 +85,7 @@ public interface BlobPool {
      * @return map of tag-uuid and its value
      * @throws SQLException when reading tags failed
      */
-    Map<UUID,String> getBlobTags(UUID blobId) throws SQLException;
+    Map<UUID, String> getBlobTags(UUID blobId) throws SQLException;
 
     /**
      * Create a new tag
@@ -116,6 +117,7 @@ public interface BlobPool {
 
     /**
      * Remove a tag
+     *
      * @param tagId tag identifier
      * @return true when tag deleted successfully
      * @throws SQLException when updating tag failed
@@ -151,4 +153,16 @@ public interface BlobPool {
      * @throws IOException  when reading blob payload failed
      */
     byte[] getBlobPayload(UUID blobId) throws SQLException, IOException;
+
+    /**
+     * Add recipient
+     *
+     * @param name        name of recipient
+     * @param metadata    optional metadata for user
+     * @param certificate encryption certificate, must be RSA
+     * @return true when created successfully
+     * @throws SQLException                 when recipient creation failed
+     * @throws CertificateEncodingException when encoding certificate failed
+     */
+    boolean createRecipient(String name, String metadata, X509Certificate certificate) throws SQLException, CertificateEncodingException;
 }

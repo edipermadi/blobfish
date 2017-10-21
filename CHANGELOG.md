@@ -9,6 +9,7 @@
 **New Features**
 
 - List blob by tag
+- Create recipient
 
 ## v2.1.0 [October 19, 2017]
 

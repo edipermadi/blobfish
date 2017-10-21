@@ -11,7 +11,6 @@ H2 Database will be used to store recipient certificates, tags and blobs
 | name        | VARCHAR(64), NOT NULL, UNIQUE        | Recipient Name                                               |
 | meta        | CLOB, NULL                           | Recipient Metadata                                           |
 | certificate | BLOB, NOT NULL                       | DER encoded Recipient Certificate                            |
-| imported    | BOOL, NOT NULL                       | True when certificate was imported from a blobfish container |
 | created_at  | TIMESTAMP, NOT NULL                  | Entry insertion timestamp                                    |
 
 `recipients` table will be indexed by

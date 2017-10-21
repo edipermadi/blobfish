@@ -5,6 +5,7 @@ import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import com.google.common.base.Joiner;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -18,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.*;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
@@ -150,6 +152,19 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 }
                 empty = blobs.isEmpty();
             }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    @Parameters({"keystore-alias-enc-sender", "keystore-alias-enc-receiver1", "keystore-alias-enc-receiver1"})
+    public void testCreateRecipient(final String alias1, final String alias2, final String alias3) throws KeyStoreException, SQLException, CertificateEncodingException {
+        Assert.assertNotNull(blobPool);
+        final List<String> aliases = Arrays.asList(alias1, alias2, alias3);
+        for (final String alias : aliases) {
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final String subject = certificate.getSubjectDN().toString();
+            final String name = RandomStringUtils.randomAlphanumeric(16);
+            blobPool.createRecipient(name, subject, certificate);
         }
     }
 
