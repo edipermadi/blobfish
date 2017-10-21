@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.sql.*;
 import java.util.*;
@@ -398,6 +399,8 @@ final class BlobPoolImpl implements BlobPool {
 
         /* prepare parameters */
         final long offset = (page - 1) * size;
+
+        /* run query */
         final Map<UUID, String> recipients = new HashMap<>();
         final String query = queries.getProperty("SQL_SELECT_RECIPIENTS");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -410,6 +413,50 @@ final class BlobPoolImpl implements BlobPool {
                 recipients.put(UUID.fromString(uuid), name);
             }
             return recipients;
+        }
+    }
+
+    @Override
+    public X509Certificate getRecipientCertificate(final UUID recipientId) throws SQLException, CertificateException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("SQL_SELECT_RECIPIENTS_CERTIFICATE_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, recipientId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such recipient " + recipientId);
+            }
+
+            /* parse certificate */
+            try (final InputStream inputStream = resultSet.getBinaryStream("certificate")) {
+                final CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                return (X509Certificate) factory.generateCertificate(inputStream);
+            } catch (final IOException ex) {
+                throw new CertificateException(ex);
+            }
+        }
+    }
+
+    @Override
+    public String getRecipientMetadata(final UUID recipientId) throws SQLException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("SQL_SELECT_RECIPIENTS_METADATA_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, recipientId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such recipient " + recipientId);
+            }
+
+            return resultSet.getString("metadata");
         }
     }
 

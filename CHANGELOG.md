@@ -11,6 +11,8 @@
 - List blob by tag
 - Create recipient
 - List Recipient
+- Get Recipient certificate
+- Get Recipient metadata
 
 ## v2.1.0 [October 19, 2017]
 

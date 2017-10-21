@@ -5,7 +5,6 @@ import com.github.edipermadi.security.blobfish.Blob;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import com.google.common.base.Joiner;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -180,6 +179,42 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 log("  found recipient");
                 log("    uuid : %s", entry.getKey());
                 log("    name : %s", entry.getValue());
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testGetRecipientCertificate() throws SQLException, CertificateException, IOException {
+        Assert.assertNotNull(blobPool);
+
+        log("getting recipient certificate");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                final X509Certificate certificate = blobPool.getRecipientCertificate(recipientId);
+                log("  found recipient %s", recipientId);
+                log("    certificate : %n%s", hexdump(certificate.getEncoded()));
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testGetRecipientMetadata() throws SQLException {
+        Assert.assertNotNull(blobPool);
+
+        log("getting recipient metadata");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                final String metadata = blobPool.getRecipientMetadata(recipientId);
+                log("  found recipient %s", recipientId);
+                log("    metadata : %s", metadata);
             }
             empty = recipients.isEmpty();
         }

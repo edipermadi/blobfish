@@ -175,4 +175,23 @@ public interface BlobPool {
      * @throws SQLException when listing recipient failed
      */
     Map<UUID, String> listRecipient(int page, int size) throws SQLException;
+
+    /**
+     * Get recipient certificate
+     *
+     * @param recipientId recipient identifier
+     * @return RSA X.509 certificate of recipient
+     * @throws SQLException         when retrieving recipient failed
+     * @throws CertificateException when parsing certificate failed
+     */
+    X509Certificate getRecipientCertificate(UUID recipientId) throws SQLException, CertificateException;
+
+    /**
+     * Get recipient metadata
+     *
+     * @param recipientId recipient identifier
+     * @return recipient string or null if not set
+     * @throws SQLException when retrieving recipient failed
+     */
+    String getRecipientMetadata(UUID recipientId) throws SQLException;
 }
