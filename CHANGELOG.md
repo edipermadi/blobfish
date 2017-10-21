@@ -10,6 +10,7 @@
 
 - List blob by tag
 - Create recipient
+- List Recipient
 
 ## v2.1.0 [October 19, 2017]
 

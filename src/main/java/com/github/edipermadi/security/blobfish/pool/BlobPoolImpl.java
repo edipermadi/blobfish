@@ -354,8 +354,8 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
         /* execute query */
+        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -385,6 +385,31 @@ final class BlobPoolImpl implements BlobPool {
             return preparedStatement.executeUpdate() > 0;
         } catch (final IOException ex) {
             throw new CertificateEncodingException(ex);
+        }
+    }
+
+    @Override
+    public Map<UUID, String> listRecipient(final int page, final int size) throws SQLException {
+        if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final Map<UUID, String> recipients = new HashMap<>();
+        final String query = queries.getProperty("SQL_SELECT_RECIPIENTS");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, page);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String name = resultSet.getString("name");
+                recipients.put(UUID.fromString(uuid), name);
+            }
+            return recipients;
         }
     }
 

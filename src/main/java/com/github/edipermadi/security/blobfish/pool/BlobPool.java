@@ -165,4 +165,14 @@ public interface BlobPool {
      * @throws CertificateEncodingException when encoding certificate failed
      */
     boolean createRecipient(String name, String metadata, X509Certificate certificate) throws SQLException, CertificateEncodingException;
+
+    /**
+     * List recipient
+     *
+     * @param page page number, starts from 1
+     * @param size page size, at least 1
+     * @return map of recipient-uuid to recipient-name
+     * @throws SQLException when listing recipient failed
+     */
+    Map<UUID, String> listRecipient(int page, int size) throws SQLException;
 }

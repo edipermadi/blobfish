@@ -168,6 +168,23 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         }
     }
 
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testListRecipient() throws SQLException {
+        Assert.assertNotNull(blobPool);
+
+        log("listing recipient");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                log("  found recipient");
+                log("    uuid : %s", entry.getKey());
+                log("    name : %s", entry.getValue());
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testCreateTag() throws SQLException {
         tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
