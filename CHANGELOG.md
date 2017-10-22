@@ -4,6 +4,7 @@
 
 **New Features**
 
+- Create blob
 - Get blob payload by path
 
 ## v2.2.0 [October 22, 2017]
