@@ -3,6 +3,10 @@
 ## Overview
 An ugly blob container based on protobuf. The project is meant to be an educational PGP-Like tamper-proof file container.
 
+![Blobby Twerkin](src/test/resources/twerkin.gif)
+
+Image courtesy of [Blobby the Blobfish](http://thelastblobfish.tumblr.com/)
+
 ## Features
 - [x] Container Features
     - [x] Versioned container
@@ -32,6 +36,7 @@ An ugly blob container based on protobuf. The project is meant to be an educatio
     - [ ] Export to blobfish container
     - [ ] Recipient CRUD access
     - [ ] Blob CRUD access
+    - [x] Tag CRUD access
 
 ## Blobfish Random Facts
 - [The Ugliest Animal](https://www.theguardian.com/environment/2013/sep/12/blobfish-world-ugliest-animal)

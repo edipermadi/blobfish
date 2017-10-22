@@ -10,7 +10,9 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.sql.*;
 import java.util.*;
@@ -24,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final class BlobPoolImpl implements BlobPool {
     private final Properties queries;
     private final Connection connection;
+    private Set<String> recipientNames = new HashSet<>();
 
     /**
      * Class constructor
@@ -140,7 +143,6 @@ final class BlobPoolImpl implements BlobPool {
                         return mimetype;
                     }
                 });
-
             }
 
             return blobs;
@@ -148,7 +150,51 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Set<String> getBlobTags(final UUID blobId) throws SQLException {
+    public Map<UUID, Blob.SimplifiedMetadata> listBlobsWithTag(final UUID tagId, final int page, final int size) throws SQLException {
+        if (tagId == null) {
+            throw new IllegalArgumentException("invalid tag identifier");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final String query = queries.getProperty("SQL_LIST_BLOB_WITH_TAG_UUID");
+
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, tagId.toString());
+            preparedStatement.setLong(2, offset);
+            preparedStatement.setLong(3, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            /* read results */
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String path = resultSet.getString("path");
+                final String mimetype = resultSet.getString("mimetype");
+                blobs.put(UUID.fromString(uuid), new Blob.SimplifiedMetadata() {
+                    @Override
+                    public String getPath() {
+                        return path;
+                    }
+
+                    @Override
+                    public String getMimeType() {
+                        return mimetype;
+                    }
+                });
+            }
+
+            return blobs;
+        }
+    }
+
+    @Override
+    public Map<UUID, String> getBlobTags(final UUID blobId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
@@ -159,10 +205,11 @@ final class BlobPoolImpl implements BlobPool {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
 
-            final Set<String> tags = new HashSet<>();
+            final Map<UUID, String> tags = new HashMap<>();
             while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
                 final String tag = resultSet.getString("tag");
-                tags.add(tag);
+                tags.put(UUID.fromString(uuid), tag);
             }
 
             return tags;
@@ -309,8 +356,8 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("blobId is null");
         }
 
-        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
         /* execute query */
+        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -320,6 +367,160 @@ final class BlobPoolImpl implements BlobPool {
             }
             final InputStream inputStream = resultSet.getBinaryStream("payload");
             return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public UUID createRecipient(final String name, final String metadata, final X509Certificate certificate) throws SQLException, CertificateEncodingException {
+        if ((name == null) || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("recipient name is null/empty");
+        } else if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equals(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
+        } else if (recipientNames.contains(name)) {
+            throw new IllegalStateException("recipient name already taken");
+        }
+
+        /* run query */
+        final UUID recipientId = UUID.randomUUID();
+        final String insertQuery = queries.getProperty("SQL_INSERT_INTO_RECIPIENTS");
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(certificate.getEncoded());
+             final PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
+            insertStatement.setString(1, recipientId.toString());
+            insertStatement.setString(2, name);
+            insertStatement.setString(3, metadata);
+            insertStatement.setBinaryStream(4, bais);
+            if (insertStatement.executeUpdate() < 1) {
+                throw new SQLException("failed to create recipient");
+            }
+
+            recipientNames.add(name);
+            return recipientId;
+        } catch (final IOException ex) {
+            throw new CertificateEncodingException(ex);
+        }
+    }
+
+    @Override
+    public Map<UUID, String> listRecipient(final int page, final int size) throws SQLException {
+        if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+
+        /* run query */
+        final Map<UUID, String> recipients = new HashMap<>();
+        final String query = queries.getProperty("SQL_SELECT_RECIPIENTS");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String name = resultSet.getString("name");
+                recipients.put(UUID.fromString(uuid), name);
+            }
+            return recipients;
+        }
+    }
+
+    @Override
+    public X509Certificate getRecipientCertificate(final UUID recipientId) throws SQLException, CertificateException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("SQL_SELECT_RECIPIENTS_CERTIFICATE_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, recipientId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such recipient " + recipientId);
+            }
+
+            /* parse certificate */
+            try (final InputStream inputStream = resultSet.getBinaryStream("certificate")) {
+                final CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                return (X509Certificate) factory.generateCertificate(inputStream);
+            } catch (final IOException ex) {
+                throw new CertificateException(ex);
+            }
+        }
+    }
+
+    @Override
+    public String getRecipientMetadata(final UUID recipientId) throws SQLException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("SQL_SELECT_RECIPIENTS_METADATA_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, recipientId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such recipient " + recipientId);
+            }
+
+            return resultSet.getString("metadata");
+        }
+    }
+
+    @Override
+    public boolean updateRecipientCertificate(final UUID recipientId, final X509Certificate certificate) throws SQLException, CertificateException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        } else if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equals(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("UPDATE_RECIPIENTS_CERTIFICATE_BY_UUID");
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(certificate.getEncoded());
+             final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setBinaryStream(1, bais);
+            preparedStatement.setString(2, recipientId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        } catch (final IOException ex) {
+            throw new CertificateException(ex);
+        }
+    }
+
+    @Override
+    public boolean updateRecipientMetadata(final UUID recipientId, final String metadata) throws SQLException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("UPDATE_RECIPIENTS_METADATA_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, metadata);
+            preparedStatement.setString(2, recipientId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean deleteRecipient(final UUID recipientId) throws SQLException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("DELETE_RECIPIENTS_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, recipientId.toString());
+            return preparedStatement.executeUpdate() > 0;
         }
     }
 

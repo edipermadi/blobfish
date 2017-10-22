@@ -1,5 +1,22 @@
 # Blobfish Changelog
 
+## v2.2.0 [October 22, 2017]
+
+**Enhancement**
+
+- BlobPool::getBlobTags now returns map of `tag-uuid` and `tag-value` 
+
+**New Features**
+
+- List blob by tag
+- Create recipient
+- List recipient
+- Get recipient certificate
+- Get recipient metadata
+- Update recipient certificate
+- Update recipient metadata
+- Delete recipient by `recipient-uuid`
+
 ## v2.1.0 [October 19, 2017]
 
 **Bugfix**

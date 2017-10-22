@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.*;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
@@ -120,6 +121,178 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testListBlobByTag() throws SQLException {
+        boolean empty = false;
+
+        /* list tags */
+        final Set<UUID> tagIds = new HashSet<>();
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
+            for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
+                tagIds.add(entry.getKey());
+            }
+            empty = tags.isEmpty();
+        }
+
+        /* list blob by tags */
+        for (final UUID tagId : tagIds) {
+            empty = false;
+
+            log("listing blobs with tag %s", tagId);
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobsWithTag(tagId, page, 10);
+                for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                    final Blob.SimplifiedMetadata metadata = entry.getValue();
+
+                    log("  found entry");
+                    log("    uuid      : %s", entry.getKey());
+                    log("    mime-type : %s", metadata.getMimeType());
+                    log("    path      : %s", metadata.getPath());
+                }
+                empty = blobs.isEmpty();
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    @Parameters({"keystore-alias-enc-sender", "keystore-alias-enc-receiver1", "keystore-alias-enc-receiver2"})
+    public void testCreateRecipient(final String alias1, final String alias2, final String alias3) throws KeyStoreException, SQLException, CertificateEncodingException {
+        Assert.assertNotNull(blobPool);
+        final List<String> aliases = Arrays.asList(alias1, alias2, alias3);
+        for (final String alias : aliases) {
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final String subject = certificate.getSubjectDN().toString();
+            final String name = RandomStringUtils.randomAlphanumeric(16);
+            final UUID recipientId = blobPool.createRecipient(name, subject, certificate);
+            log("created recipient %s", recipientId);
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    @Parameters({"keystore-alias-enc-sender", "keystore-alias-enc-receiver1", "keystore-alias-enc-receiver2"})
+    public void testDeleteRecipient(final String alias1, final String alias2, final String alias3) throws KeyStoreException, SQLException, CertificateEncodingException {
+        Assert.assertNotNull(blobPool);
+
+        /* create recipients */
+        final List<String> aliases = Arrays.asList(alias1, alias2, alias3);
+        final List<UUID> recipientIds = new ArrayList<>();
+        for (final String alias : aliases) {
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final String subject = certificate.getSubjectDN().toString();
+            final String name = RandomStringUtils.randomAlphanumeric(16);
+            final UUID recipientId = blobPool.createRecipient(name, subject, certificate);
+            recipientIds.add(recipientId);
+            log("created recipient %s", recipientId);
+        }
+
+        /* delete recipients */
+        for (final UUID recipientId : recipientIds) {
+            log("delete recipient %s", recipientId);
+            final boolean deleted = blobPool.deleteRecipient(recipientId);
+            Assert.assertTrue(deleted);
+
+            boolean empty = false;
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, String> entries = blobPool.listRecipient(page, 10);
+                Assert.assertFalse(entries.containsKey(recipientId));
+                empty = entries.isEmpty();
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    @Parameters({"keystore-alias-enc-sender"})
+    public void testUpdateRecipientCertificate(final String alias) throws KeyStoreException, SQLException, CertificateException {
+        Assert.assertNotNull(blobPool);
+
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+        log("updating recipient certificates");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                log("  updating certificate of recipient %s", recipientId);
+                final boolean success = blobPool.updateRecipientCertificate(entry.getKey(), certificate);
+                Assert.assertTrue(success);
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testUpdateRecipientMetadata() throws KeyStoreException, SQLException {
+        Assert.assertNotNull(blobPool);
+
+        log("updating recipient metadata");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                final String metadata = RandomStringUtils.randomAlphanumeric(64);
+                log("  updating metadata of recipient %s", recipientId);
+                final boolean success = blobPool.updateRecipientMetadata(recipientId, metadata);
+                Assert.assertTrue(success);
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testListRecipient() throws SQLException {
+        Assert.assertNotNull(blobPool);
+
+        log("listing recipient");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                log("  found recipient");
+                log("    uuid : %s", entry.getKey());
+                log("    name : %s", entry.getValue());
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testGetRecipientCertificate() throws SQLException, CertificateException, IOException {
+        Assert.assertNotNull(blobPool);
+
+        log("getting recipient certificate");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                final X509Certificate certificate = blobPool.getRecipientCertificate(recipientId);
+                log("  found recipient %s", recipientId);
+                log("    certificate : %n%s", hexdump(certificate.getEncoded()));
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testGetRecipientMetadata() throws SQLException {
+        Assert.assertNotNull(blobPool);
+
+        log("getting recipient metadata");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                final String metadata = blobPool.getRecipientMetadata(recipientId);
+                log("  found recipient %s", recipientId);
+                log("    metadata : %s", metadata);
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testCreateTag() throws SQLException {
         tagVal = RandomStringUtils.randomAlphanumeric(16).toLowerCase();
 
@@ -176,8 +349,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Set<String> tags = blobPool.getBlobTags(blobId);
-                Assert.assertTrue(tags.contains(tagVal));
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertTrue(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
         }
@@ -204,8 +377,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Set<String> tags = blobPool.getBlobTags(blobId);
-                Assert.assertFalse(tags.contains(tagVal));
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertFalse(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
         }
@@ -237,8 +410,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Set<String> tags = blobPool.getBlobTags(blobId);
-                Assert.assertTrue(tags.contains(tagVal));
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertTrue(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
         }
@@ -252,8 +425,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final Set<String> tags = blobPool.getBlobTags(blobId);
-                Assert.assertFalse(tags.contains(tagVal));
+                final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
+                Assert.assertFalse(tags.containsValue(tagVal));
             }
             empty = entries.isEmpty();
         }
@@ -269,14 +442,19 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
-                final Set<String> tags = blobPool.getBlobTags(entry.getKey());
+                final Map<UUID, String> tags = blobPool.getBlobTags(entry.getKey());
                 final byte[] payload = blobPool.getBlobPayload(entry.getKey());
+
+                final Set<String> tagValues = new HashSet<>();
+                for (final Map.Entry<UUID, String> tag : tags.entrySet()) {
+                    tagValues.add(tag.getValue());
+                }
 
                 log("found entry");
                 log("  uuid      : %s", entry.getKey());
                 log("  mime-type : %s", metadata.getMimeType());
                 log("  path      : %s", metadata.getPath());
-                log("  tags      : %s", Joiner.on(", ").join(tags));
+                log("  tags      : %s", Joiner.on(", ").join(tagValues));
 
                 final File file = new File(metadata.getPath());
                 final File dir = new File("target");

@@ -7,11 +7,11 @@ import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.PrivateKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -68,13 +68,24 @@ public interface BlobPool {
     Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException;
 
     /**
+     * List blobs which has given tag
+     *
+     * @param tagId tag identifier
+     * @param page  number starts from 1
+     * @param size  page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> listBlobsWithTag(UUID tagId, int page, int size) throws SQLException;
+
+    /**
      * Get tags of a particular blob
      *
      * @param blobId blob identifier
-     * @return set of tags
+     * @return map of tag-uuid and its value
      * @throws SQLException when reading tags failed
      */
-    Set<String> getBlobTags(UUID blobId) throws SQLException;
+    Map<UUID, String> getBlobTags(UUID blobId) throws SQLException;
 
     /**
      * Create a new tag
@@ -106,6 +117,7 @@ public interface BlobPool {
 
     /**
      * Remove a tag
+     *
      * @param tagId tag identifier
      * @return true when tag deleted successfully
      * @throws SQLException when updating tag failed
@@ -141,4 +153,75 @@ public interface BlobPool {
      * @throws IOException  when reading blob payload failed
      */
     byte[] getBlobPayload(UUID blobId) throws SQLException, IOException;
+
+    /**
+     * Add recipient
+     *
+     * @param name        name of recipient
+     * @param metadata    optional metadata for user
+     * @param certificate encryption certificate, must be RSA
+     * @return UUID of recipient
+     * @throws SQLException                 when recipient creation failed
+     * @throws CertificateEncodingException when encoding certificate failed
+     */
+    UUID createRecipient(String name, String metadata, X509Certificate certificate) throws SQLException, CertificateEncodingException;
+
+    /**
+     * List recipient
+     *
+     * @param page page number, starts from 1
+     * @param size page size, at least 1
+     * @return map of recipient-uuid to recipient-name
+     * @throws SQLException when listing recipient failed
+     */
+    Map<UUID, String> listRecipient(int page, int size) throws SQLException;
+
+    /**
+     * Get recipient certificate
+     *
+     * @param recipientId recipient identifier
+     * @return RSA X.509 certificate of recipient
+     * @throws SQLException         when retrieving recipient failed
+     * @throws CertificateException when parsing certificate failed
+     */
+    X509Certificate getRecipientCertificate(UUID recipientId) throws SQLException, CertificateException;
+
+    /**
+     * Get recipient metadata
+     *
+     * @param recipientId recipient identifier
+     * @return recipient string or null if not set
+     * @throws SQLException when retrieving recipient failed
+     */
+    String getRecipientMetadata(UUID recipientId) throws SQLException;
+
+    /**
+     * Update recipient certificate
+     *
+     * @param recipientId recipient identifier
+     * @param certificate new recipient certificate
+     * @return true when updated successfully
+     * @throws SQLException         when updating failed
+     * @throws CertificateException when encoding certificate failed
+     */
+    boolean updateRecipientCertificate(UUID recipientId, X509Certificate certificate) throws SQLException, CertificateException;
+
+    /**
+     * Update recipient metadata
+     *
+     * @param recipientId recipient identifier
+     * @param metadata    new recipient metadata
+     * @return true when updated successfully
+     * @throws SQLException when updating failed
+     */
+    boolean updateRecipientMetadata(UUID recipientId, String metadata) throws SQLException;
+
+    /**
+     * Delete recipient
+     *
+     * @param recipientId recipient identifier
+     * @return true when deleted successfully
+     * @throws SQLException when deletion failed
+     */
+    boolean deleteRecipient(UUID recipientId) throws SQLException;
 }
