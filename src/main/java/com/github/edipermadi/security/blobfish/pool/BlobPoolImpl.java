@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final class BlobPoolImpl implements BlobPool {
     private final Properties queries;
     private final Connection connection;
+    private Set<String> recipientNames = new HashSet<>();
 
     /**
      * Class constructor
@@ -377,8 +378,11 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("certificate is null");
         } else if (!"RSA".equals(certificate.getPublicKey().getAlgorithm())) {
             throw new IllegalArgumentException("invalid certificate type");
+        } else if (recipientNames.contains(name)) {
+            throw new IllegalStateException("recipient name already taken");
         }
 
+        /* run query */
         final UUID recipientId = UUID.randomUUID();
         final String insertQuery = queries.getProperty("SQL_INSERT_INTO_RECIPIENTS");
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(certificate.getEncoded());
@@ -391,6 +395,7 @@ final class BlobPoolImpl implements BlobPool {
                 throw new SQLException("failed to create recipient");
             }
 
+            recipientNames.add(name);
             return recipientId;
         } catch (final IOException ex) {
             throw new CertificateEncodingException(ex);
