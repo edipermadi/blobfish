@@ -34,7 +34,7 @@ Image courtesy of [Blobby the Blobfish](http://thelastblobfish.tumblr.com/)
 - [ ] BlobPool, a mutable intermediate container
     - [x] Import from blobfish container
     - [ ] Export to blobfish container
-    - [ ] Recipient CRUD access
+    - [x] Recipient CRUD access
     - [ ] Blob CRUD access
     - [x] Tag CRUD access
 
