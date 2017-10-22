@@ -169,6 +169,38 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testCreateRecipient"})
+    @Parameters({"keystore-alias-enc-sender", "keystore-alias-enc-receiver1", "keystore-alias-enc-receiver2"})
+    public void testDeleteRecipient(final String alias1, final String alias2, final String alias3) throws KeyStoreException, SQLException, CertificateEncodingException {
+        Assert.assertNotNull(blobPool);
+
+        /* create recipients */
+        final List<String> aliases = Arrays.asList(alias1, alias2, alias3);
+        final List<UUID> recipientIds = new ArrayList<>();
+        for (final String alias : aliases) {
+            final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+            final String subject = certificate.getSubjectDN().toString();
+            final String name = RandomStringUtils.randomAlphanumeric(16);
+            final UUID recipientId = blobPool.createRecipient(name, subject, certificate);
+            recipientIds.add(recipientId);
+            log("created recipient %s", recipientId);
+        }
+
+        /* delete recipients */
+        for (final UUID recipientId : recipientIds) {
+            log("delete recipient %s", recipientId);
+            final boolean deleted = blobPool.deleteRecipient(recipientId);
+            Assert.assertTrue(deleted);
+
+            boolean empty = false;
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, String> entries = blobPool.listRecipient(page, 10);
+                Assert.assertFalse(entries.containsKey(recipientId));
+                empty = entries.isEmpty();
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
     @Parameters({"keystore-alias-enc-sender"})
     public void testUpdateRecipientCertificate(final String alias) throws KeyStoreException, SQLException, CertificateException {
         Assert.assertNotNull(blobPool);

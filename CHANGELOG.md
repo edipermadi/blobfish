@@ -10,11 +10,12 @@
 
 - List blob by tag
 - Create recipient
-- List Recipient
-- Get Recipient certificate
-- Get Recipient metadata
-- Update Recipient certificate
-- Update Recipient metadata
+- List recipient
+- Get recipient certificate
+- Get recipient metadata
+- Update recipient certificate
+- Update recipient metadata
+- Delete recipient by `recipient-uuid`
 
 ## v2.1.0 [October 19, 2017]
 

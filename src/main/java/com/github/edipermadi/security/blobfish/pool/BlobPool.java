@@ -215,4 +215,13 @@ public interface BlobPool {
      * @throws SQLException when updating failed
      */
     boolean updateRecipientMetadata(UUID recipientId, String metadata) throws SQLException;
+
+    /**
+     * Delete recipient
+     *
+     * @param recipientId recipient identifier
+     * @return true when deleted successfully
+     * @throws SQLException when deletion failed
+     */
+    boolean deleteRecipient(UUID recipientId) throws SQLException;
 }

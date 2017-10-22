@@ -510,6 +510,20 @@ final class BlobPoolImpl implements BlobPool {
         }
     }
 
+    @Override
+    public boolean deleteRecipient(final UUID recipientId) throws SQLException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("DELETE_RECIPIENTS_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, recipientId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
     /**
      * Create tables
      *
