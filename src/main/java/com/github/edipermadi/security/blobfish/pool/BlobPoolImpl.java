@@ -370,20 +370,28 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean createRecipient(final String name, final String metadata, final X509Certificate certificate) throws SQLException, CertificateEncodingException {
+    public UUID createRecipient(final String name, final String metadata, final X509Certificate certificate) throws SQLException, CertificateEncodingException {
         if ((name == null) || name.trim().isEmpty()) {
             throw new IllegalArgumentException("recipient name is null/empty");
         } else if (certificate == null) {
             throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equals(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
         }
 
-        final String query = queries.getProperty("SQL_INSERT_INTO_RECIPIENTS");
+        final UUID recipientId = UUID.randomUUID();
+        final String insertQuery = queries.getProperty("SQL_INSERT_INTO_RECIPIENTS");
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(certificate.getEncoded());
-             final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-            preparedStatement.setString(1, name);
-            preparedStatement.setString(2, metadata);
-            preparedStatement.setBinaryStream(3, bais);
-            return preparedStatement.executeUpdate() > 0;
+             final PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
+            insertStatement.setString(1, recipientId.toString());
+            insertStatement.setString(2, name);
+            insertStatement.setString(3, metadata);
+            insertStatement.setBinaryStream(4, bais);
+            if (insertStatement.executeUpdate() < 1) {
+                throw new SQLException("failed to create recipient");
+            }
+
+            return recipientId;
         } catch (final IOException ex) {
             throw new CertificateEncodingException(ex);
         }
@@ -405,7 +413,7 @@ final class BlobPoolImpl implements BlobPool {
         final String query = queries.getProperty("SQL_SELECT_RECIPIENTS");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setLong(1, offset);
-            preparedStatement.setLong(2, page);
+            preparedStatement.setLong(2, size);
             final ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 final String uuid = resultSet.getString("uuid");
@@ -457,6 +465,43 @@ final class BlobPoolImpl implements BlobPool {
             }
 
             return resultSet.getString("metadata");
+        }
+    }
+
+    @Override
+    public boolean updateRecipientCertificate(final UUID recipientId, final X509Certificate certificate) throws SQLException, CertificateException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        } else if (certificate == null) {
+            throw new IllegalArgumentException("certificate is null");
+        } else if (!"RSA".equals(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalArgumentException("invalid certificate type");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("UPDATE_RECIPIENTS_CERTIFICATE_BY_UUID");
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(certificate.getEncoded());
+             final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setBinaryStream(1, bais);
+            preparedStatement.setString(2, recipientId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        } catch (final IOException ex) {
+            throw new CertificateException(ex);
+        }
+    }
+
+    @Override
+    public boolean updateRecipientMetadata(final UUID recipientId, final String metadata) throws SQLException {
+        if (recipientId == null) {
+            throw new IllegalArgumentException("recipientId is null");
+        }
+
+        /* run query */
+        final String query = queries.getProperty("UPDATE_RECIPIENTS_METADATA_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, metadata);
+            preparedStatement.setString(2, recipientId.toString());
+            return preparedStatement.executeUpdate() > 0;
         }
     }
 

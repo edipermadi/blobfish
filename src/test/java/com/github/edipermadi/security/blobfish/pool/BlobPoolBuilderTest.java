@@ -155,7 +155,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
-    @Parameters({"keystore-alias-enc-sender", "keystore-alias-enc-receiver1", "keystore-alias-enc-receiver1"})
+    @Parameters({"keystore-alias-enc-sender", "keystore-alias-enc-receiver1", "keystore-alias-enc-receiver2"})
     public void testCreateRecipient(final String alias1, final String alias2, final String alias3) throws KeyStoreException, SQLException, CertificateEncodingException {
         Assert.assertNotNull(blobPool);
         final List<String> aliases = Arrays.asList(alias1, alias2, alias3);
@@ -163,7 +163,47 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
             final String subject = certificate.getSubjectDN().toString();
             final String name = RandomStringUtils.randomAlphanumeric(16);
-            blobPool.createRecipient(name, subject, certificate);
+            final UUID recipientId = blobPool.createRecipient(name, subject, certificate);
+            log("created recipient %s", recipientId);
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    @Parameters({"keystore-alias-enc-sender"})
+    public void testUpdateRecipientCertificate(final String alias) throws KeyStoreException, SQLException, CertificateException {
+        Assert.assertNotNull(blobPool);
+
+        final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
+        log("updating recipient certificates");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                log("  updating certificate of recipient %s", recipientId);
+                final boolean success = blobPool.updateRecipientCertificate(entry.getKey(), certificate);
+                Assert.assertTrue(success);
+            }
+            empty = recipients.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testUpdateRecipientMetadata() throws KeyStoreException, SQLException {
+        Assert.assertNotNull(blobPool);
+
+        log("updating recipient metadata");
+        boolean empty = false;
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, String> recipients = blobPool.listRecipient(page, 10);
+            for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                final UUID recipientId = entry.getKey();
+                final String metadata = RandomStringUtils.randomAlphanumeric(64);
+                log("  updating metadata of recipient %s", recipientId);
+                final boolean success = blobPool.updateRecipientMetadata(recipientId, metadata);
+                Assert.assertTrue(success);
+            }
+            empty = recipients.isEmpty();
         }
     }
 

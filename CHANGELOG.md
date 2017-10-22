@@ -13,6 +13,8 @@
 - List Recipient
 - Get Recipient certificate
 - Get Recipient metadata
+- Update Recipient certificate
+- Update Recipient metadata
 
 ## v2.1.0 [October 19, 2017]
 

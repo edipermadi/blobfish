@@ -160,11 +160,11 @@ public interface BlobPool {
      * @param name        name of recipient
      * @param metadata    optional metadata for user
      * @param certificate encryption certificate, must be RSA
-     * @return true when created successfully
+     * @return UUID of recipient
      * @throws SQLException                 when recipient creation failed
      * @throws CertificateEncodingException when encoding certificate failed
      */
-    boolean createRecipient(String name, String metadata, X509Certificate certificate) throws SQLException, CertificateEncodingException;
+    UUID createRecipient(String name, String metadata, X509Certificate certificate) throws SQLException, CertificateEncodingException;
 
     /**
      * List recipient
@@ -194,4 +194,25 @@ public interface BlobPool {
      * @throws SQLException when retrieving recipient failed
      */
     String getRecipientMetadata(UUID recipientId) throws SQLException;
+
+    /**
+     * Update recipient certificate
+     *
+     * @param recipientId recipient identifier
+     * @param certificate new recipient certificate
+     * @return true when updated successfully
+     * @throws SQLException         when updating failed
+     * @throws CertificateException when encoding certificate failed
+     */
+    boolean updateRecipientCertificate(UUID recipientId, X509Certificate certificate) throws SQLException, CertificateException;
+
+    /**
+     * Update recipient metadata
+     *
+     * @param recipientId recipient identifier
+     * @param metadata    new recipient metadata
+     * @return true when updated successfully
+     * @throws SQLException when updating failed
+     */
+    boolean updateRecipientMetadata(UUID recipientId, String metadata) throws SQLException;
 }
