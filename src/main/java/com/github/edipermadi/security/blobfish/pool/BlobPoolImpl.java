@@ -78,7 +78,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, String> listAvailableTags(final int page, final int size) throws SQLException {
+    public Map<UUID, String> listTags(final int page, final int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -110,7 +110,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException {
+    public Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {

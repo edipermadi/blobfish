@@ -48,46 +48,6 @@ public interface BlobPool {
     void importPayload(InputStream inputStream, final X509Certificate certificate, final PrivateKey privateKey) throws BlobfishDecodeException, BlobfishCryptoException, IOException, CertificateException, SQLException;
 
     /**
-     * List available tags
-     *
-     * @param page number starts from 1
-     * @param size page size at least 1
-     * @return map of tag id and string
-     * @throws SQLException when reading tags failed
-     */
-    Map<UUID, String> listAvailableTags(int page, int size) throws SQLException;
-
-    /**
-     * List available blobs
-     *
-     * @param page number starts from 1
-     * @param size page size at least 1
-     * @return map of blob uuid and corresponding metadata
-     * @throws SQLException when reading blob failed
-     */
-    Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException;
-
-    /**
-     * List blobs which has given tag
-     *
-     * @param tagId tag identifier
-     * @param page  number starts from 1
-     * @param size  page size at least 1
-     * @return map of blob uuid and corresponding metadata
-     * @throws SQLException when reading blob failed
-     */
-    Map<UUID, Blob.SimplifiedMetadata> listBlobsWithTag(UUID tagId, int page, int size) throws SQLException;
-
-    /**
-     * Get tags of a particular blob
-     *
-     * @param blobId blob identifier
-     * @return map of tag-uuid and its value
-     * @throws SQLException when reading tags failed
-     */
-    Map<UUID, String> getBlobTags(UUID blobId) throws SQLException;
-
-    /**
      * Create a new tag
      *
      * @param tag new tag to be created
@@ -95,6 +55,16 @@ public interface BlobPool {
      * @throws SQLException when inserting tag failed
      */
     UUID createTag(String tag) throws SQLException;
+
+    /**
+     * List tags
+     *
+     * @param page number starts from 1
+     * @param size page size at least 1
+     * @return map of tag id and string
+     * @throws SQLException when reading tags failed
+     */
+    Map<UUID, String> listTags(int page, int size) throws SQLException;
 
     /**
      * Get tag value by tag uuid
@@ -136,6 +106,27 @@ public interface BlobPool {
     UUID createBlob(String path, String mimetype, InputStream payload) throws SQLException;
 
     /**
+     * List blobs
+     *
+     * @param page number starts from 1
+     * @param size page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException;
+
+    /**
+     * List blobs which has given tag
+     *
+     * @param tagId tag identifier
+     * @param page  number starts from 1
+     * @param size  page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> listBlobsWithTag(UUID tagId, int page, int size) throws SQLException;
+
+    /**
      * Add tag to a blob
      *
      * @param blobId blob identifier
@@ -154,6 +145,15 @@ public interface BlobPool {
      * @throws SQLException when de-assigning tag failed
      */
     boolean removeTagFromBlob(UUID blobId, UUID tagId) throws SQLException;
+
+    /**
+     * Get tags of a particular blob
+     *
+     * @param blobId blob identifier
+     * @return map of tag-uuid and its value
+     * @throws SQLException when reading tags failed
+     */
+    Map<UUID, String> getBlobTags(UUID blobId) throws SQLException;
 
     /**
      * Get blob payload by blob-uuid

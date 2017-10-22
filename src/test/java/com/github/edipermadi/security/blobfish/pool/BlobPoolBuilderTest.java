@@ -108,7 +108,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListTags() throws SQLException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 log("found entry");
                 log("  uuid : %s", entry.getKey());
@@ -131,7 +131,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         }
 
         /* insert to blob */
-        UUID blobId = null;
+        UUID blobId;
         try (final FileInputStream fis = new FileInputStream(file)) {
             blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", fis);
         }
@@ -151,7 +151,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* list tags */
         final Set<UUID> tagIds = new HashSet<>();
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 tagIds.add(entry.getKey());
             }
@@ -358,7 +358,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         /* add tag to all blobs */
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final boolean added = blobPool.addTagToBlob(blobId, tagId);
@@ -370,7 +370,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* ensure that blobs have that tag */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -386,7 +386,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         /* remove tag from all blobs */
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final boolean added = blobPool.removeTagFromBlob(blobId, tagId);
@@ -398,7 +398,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* ensure that those blobs don't have that tag */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -419,7 +419,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* add tag to all blobs */
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final boolean added = blobPool.addTagToBlob(blobId, tagId);
@@ -431,7 +431,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* make sure association is there */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -446,7 +446,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* make sure association is removed */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -465,7 +465,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         log("listing blobs");
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
                 final Map<UUID, String> tags = blobPool.getBlobTags(entry.getKey());
@@ -499,7 +499,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         log("tag getting blob payload by path");
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
                 final byte[] payloadByUuid = blobPool.getBlobPayload(entry.getKey());
@@ -526,7 +526,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         final Set<String> tags = new HashSet<>();
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> entries = blobPool.listAvailableTags(page, 10);
+            final Map<UUID, String> entries = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : entries.entrySet()) {
                 tags.add(entry.getValue());
             }
