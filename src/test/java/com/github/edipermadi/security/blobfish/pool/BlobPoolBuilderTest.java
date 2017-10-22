@@ -12,11 +12,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -118,6 +116,32 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             }
             empty = tags.isEmpty();
         }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testCreateBlob() throws SQLException, IOException {
+        final String content = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File file = File.createTempFile("tmp-", ".txt");
+        try (final FileOutputStream fos = new FileOutputStream(file);
+             final OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+            writer.write(content);
+            writer.flush();
+        }
+
+        /* insert to blob */
+        UUID blobId = null;
+        try (final FileInputStream fis = new FileInputStream(file)) {
+            blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", fis);
+        }
+
+        /* check content */
+        final String payloadByUuid = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPath = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuid, content);
+        Assert.assertEquals(payloadByPath, content);
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})

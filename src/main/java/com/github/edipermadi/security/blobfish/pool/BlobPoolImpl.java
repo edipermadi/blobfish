@@ -27,6 +27,7 @@ final class BlobPoolImpl implements BlobPool {
     private final Properties queries;
     private final Connection connection;
     private Set<String> recipientNames = new HashSet<>();
+    private Set<String> blobPaths = new HashSet<>();
 
     /**
      * Class constructor
@@ -291,6 +292,40 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public UUID createBlob(final String path, final String mimetype, final InputStream payload) throws SQLException {
+        if ((path == null) || path.trim().isEmpty()) {
+            throw new IllegalArgumentException("path is null or empty");
+        } else if (!path.startsWith("/") || path.endsWith("/")) {
+            throw new IllegalArgumentException("path has to be absolute, and it has to be a file");
+        } else if ((mimetype == null) || mimetype.trim().isEmpty()) {
+            throw new IllegalArgumentException("mimetype is null or empty");
+        } else if (payload == null) {
+            throw new IllegalArgumentException("payload is null");
+        } else if (blobPaths.contains(path)) {
+            throw new IllegalStateException("blob path is already taken");
+        }
+
+        /* prepare query parameters */
+        final UUID blobId = UUID.randomUUID();
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_INSERT_BLOB");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            preparedStatement.setString(2, path);
+            preparedStatement.setString(3, mimetype);
+            preparedStatement.setBinaryStream(4, payload);
+            preparedStatement.setBoolean(5, false);
+            if (preparedStatement.executeUpdate() < 1) {
+                throw new SQLException("failed to insert blob");
+            }
+
+            blobPaths.add(path);
+            return blobId;
+        }
+    }
+
+    @Override
     public UUID createTag(final String tag) throws SQLException {
         if ((tag == null) || tag.trim().isEmpty()) {
             throw new IllegalArgumentException("invalid tag");
@@ -372,7 +407,7 @@ final class BlobPoolImpl implements BlobPool {
 
     @Override
     public byte[] getBlobPayload(String path) throws SQLException, IOException {
-        if(path == null){
+        if (path == null) {
             throw new IllegalArgumentException("invalid blob path");
         }
 
@@ -617,10 +652,12 @@ final class BlobPoolImpl implements BlobPool {
             /* insert blob */
             final String insertBlobQuery = queries.getProperty("SQL_INSERT_BLOB");
             try (final PreparedStatement preparedStatement = connection.prepareStatement(insertBlobQuery, Statement.RETURN_GENERATED_KEYS)) {
-                preparedStatement.setString(1, path);
-                preparedStatement.setString(2, mimeType);
-                preparedStatement.setBinaryStream(3, new ByteArrayInputStream(payload));
-                preparedStatement.setBoolean(4, true);
+                final UUID blobUuid = UUID.randomUUID();
+                preparedStatement.setString(1, blobUuid.toString());
+                preparedStatement.setString(2, path);
+                preparedStatement.setString(3, mimeType);
+                preparedStatement.setBinaryStream(4, new ByteArrayInputStream(payload));
+                preparedStatement.setBoolean(5, true);
                 if (preparedStatement.executeUpdate() == 0) {
                     throw new SQLException("failed to insert blob");
                 }

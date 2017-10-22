@@ -125,6 +125,17 @@ public interface BlobPool {
     boolean removeTag(UUID tagId) throws SQLException;
 
     /**
+     * Create blob
+     *
+     * @param path     blob path
+     * @param mimetype blob mimetype
+     * @param payload  blob payload
+     * @return UUID of created blob
+     * @throws SQLException when inserting new blob failed
+     */
+    UUID createBlob(String path, String mimetype, InputStream payload) throws SQLException;
+
+    /**
      * Add tag to a blob
      *
      * @param blobId blob identifier
