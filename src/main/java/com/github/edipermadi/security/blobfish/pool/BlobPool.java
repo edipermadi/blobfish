@@ -145,7 +145,7 @@ public interface BlobPool {
     boolean removeTagFromBlob(UUID blobId, UUID tagId) throws SQLException;
 
     /**
-     * Get blob payload
+     * Get blob payload by blob-uuid
      *
      * @param blobId blob identifier
      * @return byte array of blob
@@ -153,6 +153,16 @@ public interface BlobPool {
      * @throws IOException  when reading blob payload failed
      */
     byte[] getBlobPayload(UUID blobId) throws SQLException, IOException;
+
+    /**
+     * Get blob payload by blob-path
+     *
+     * @param path blob path
+     * @return byte array of blob
+     * @throws SQLException when reading payload failed
+     * @throws IOException  when reading blob payload failed
+     */
+    byte[] getBlobPayload(String path) throws SQLException, IOException;
 
     /**
      * Add recipient

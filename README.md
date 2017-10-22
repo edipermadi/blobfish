@@ -35,7 +35,7 @@ Image courtesy of [Blobby the Blobfish](http://thelastblobfish.tumblr.com/)
     - [x] Import from blobfish container
     - [ ] Export to blobfish container
     - [x] Recipient CRUD access
-    - [ ] Blob CRUD access
+    - [x] Blob CRUD access
     - [x] Tag CRUD access
 
 ## Blobfish Random Facts

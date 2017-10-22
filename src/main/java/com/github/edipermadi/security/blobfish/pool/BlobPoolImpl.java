@@ -363,7 +363,27 @@ final class BlobPoolImpl implements BlobPool {
             final ResultSet resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next()) {
-                throw new NoSuchElementException("no such blob " + blobId);
+                throw new NoSuchElementException("no such blob with id " + blobId);
+            }
+            final InputStream inputStream = resultSet.getBinaryStream("payload");
+            return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public byte[] getBlobPayload(String path) throws SQLException, IOException {
+        if(path == null){
+            throw new IllegalArgumentException("invalid blob path");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_GET_BLOB_BY_PATH");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, path);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob at path " + path);
             }
             final InputStream inputStream = resultSet.getBinaryStream("payload");
             return IOUtils.toByteArray(inputStream);

@@ -438,6 +438,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
+
+        log("listing blobs");
         for (int page = 1; !empty; page++) {
             final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
@@ -450,11 +452,11 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                     tagValues.add(tag.getValue());
                 }
 
-                log("found entry");
-                log("  uuid      : %s", entry.getKey());
-                log("  mime-type : %s", metadata.getMimeType());
-                log("  path      : %s", metadata.getPath());
-                log("  tags      : %s", Joiner.on(", ").join(tagValues));
+                log("  found entry");
+                log("    uuid      : %s", entry.getKey());
+                log("    mime-type : %s", metadata.getMimeType());
+                log("    path      : %s", metadata.getPath());
+                log("    tags      : %s", Joiner.on(", ").join(tagValues));
 
                 final File file = new File(metadata.getPath());
                 final File dir = new File("target");
@@ -462,6 +464,28 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 try (final FileOutputStream fos = new FileOutputStream(outFile)) {
                     fos.write(payload);
                 }
+            }
+            empty = blobs.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testGetBlobPayloadByPath() throws SQLException, IOException {
+        boolean empty = false;
+
+        log("tag getting blob payload by path");
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                final Blob.SimplifiedMetadata metadata = entry.getValue();
+                final byte[] payloadByUuid = blobPool.getBlobPayload(entry.getKey());
+                final byte[] payloadByPath = blobPool.getBlobPayload(metadata.getPath());
+                Assert.assertEquals(payloadByUuid, payloadByPath);
+
+                log("  found entry");
+                log("    uuid      : %s", entry.getKey());
+                log("    mime-type : %s", metadata.getMimeType());
+                log("    path      : %s", metadata.getPath());
             }
             empty = blobs.isEmpty();
         }
