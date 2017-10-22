@@ -441,7 +441,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         }
 
         /* remove there */
-        blobPool.removeTag(tagId);
+        final boolean removed = blobPool.removeTag(tagId);
+        Assert.assertTrue(removed);
 
         /* make sure association is removed */
         empty = false;
@@ -488,6 +489,36 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 try (final FileOutputStream fos = new FileOutputStream(outFile)) {
                     fos.write(payload);
                 }
+            }
+            empty = blobs.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testListBlobs"})
+    public void testGetBlobMetadata() throws SQLException, IOException {
+        boolean empty = false;
+
+        log("getting blob metadata");
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Blob.SimplifiedMetadata metadata = entry.getValue();
+
+                final String path = metadata.getPath();
+                final Blob.SimplifiedMetadata metadataById = blobPool.getBlobMetadata(blobId);
+                final Blob.SimplifiedMetadata metadataByPath = blobPool.getBlobMetadata(path);
+
+                /* compare values */
+                Assert.assertEquals(metadata.getPath(), metadataById.getPath());
+                Assert.assertEquals(metadata.getMimeType(), metadataById.getMimeType());
+                Assert.assertEquals(metadata.getPath(), metadataByPath.getPath());
+                Assert.assertEquals(metadata.getMimeType(), metadataByPath.getMimeType());
+
+                log("  found entry");
+                log("    uuid      : %s", entry.getKey());
+                log("    mime-type : %s", metadata.getMimeType());
+                log("    path      : %s", metadata.getPath());
             }
             empty = blobs.isEmpty();
         }

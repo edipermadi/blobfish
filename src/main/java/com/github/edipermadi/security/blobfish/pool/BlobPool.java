@@ -176,6 +176,24 @@ public interface BlobPool {
     byte[] getBlobPayload(String path) throws SQLException, IOException;
 
     /**
+     * Get blob metadata by blob identifier
+     *
+     * @param blobId blob identifier
+     * @return simplified blob metadata
+     * @throws SQLException when retrieving blob metadata failed
+     */
+    Blob.SimplifiedMetadata getBlobMetadata(UUID blobId) throws SQLException;
+
+    /**
+     * Get blob metadata by blob path
+     *
+     * @param path blob path
+     * @return simplified blob metadata
+     * @throws SQLException when retrieving blob metadata failed
+     */
+    Blob.SimplifiedMetadata getBlobMetadata(String path) throws SQLException;
+
+    /**
      * Add recipient
      *
      * @param name        name of recipient

@@ -392,7 +392,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* execute query */
-        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
+        final String query = queries.getProperty("SQL_GET_BLOBS_PAYLOAD_BY_UUID");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -412,7 +412,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* execute query */
-        final String query = queries.getProperty("SQL_GET_BLOB_BY_PATH");
+        final String query = queries.getProperty("SQL_GET_BLOBS_PAYLOAD_BY_PATH");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, path);
             final ResultSet resultSet = preparedStatement.executeQuery();
@@ -422,6 +422,74 @@ final class BlobPoolImpl implements BlobPool {
             }
             final InputStream inputStream = resultSet.getBinaryStream("payload");
             return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public Blob.SimplifiedMetadata getBlobMetadata(final UUID blobId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        }
+
+        final String query = queries.getProperty("SQL_GET_BLOBS_METADATA_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob with id " + blobId);
+            }
+
+            /* get values */
+            final String retrievedPath = resultSet.getString("path");
+            final String retrievedMimetype = resultSet.getString("mimetype");
+
+            /* return as simplified metadata */
+            return new Blob.SimplifiedMetadata() {
+                @Override
+                public String getPath() {
+                    return retrievedPath;
+                }
+
+                @Override
+                public String getMimeType() {
+                    return retrievedMimetype;
+                }
+            };
+        }
+    }
+
+    @Override
+    public Blob.SimplifiedMetadata getBlobMetadata(String path) throws SQLException {
+        if (path == null) {
+            throw new IllegalArgumentException("invalid blob path");
+        }
+
+        final String query = queries.getProperty("SQL_GET_BLOBS_METADATA_BY_PATH");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, path);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob at path" + path);
+            }
+
+            /* get values */
+            final String retrievedPath = resultSet.getString("path");
+            final String retrievedMimetype = resultSet.getString("mimetype");
+
+            /* return as simplified metadata */
+            return new Blob.SimplifiedMetadata() {
+                @Override
+                public String getPath() {
+                    return retrievedPath;
+                }
+
+                @Override
+                public String getMimeType() {
+                    return retrievedMimetype;
+                }
+            };
         }
     }
 
