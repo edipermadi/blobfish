@@ -124,15 +124,10 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         /* write to temporary file */
         final File file = File.createTempFile("tmp-", ".txt");
-        try (final FileOutputStream fos = new FileOutputStream(file);
-             final OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
-            writer.write(content);
-            writer.flush();
-        }
 
         /* insert to blob */
         UUID blobId;
-        try (final FileInputStream fis = new FileInputStream(file)) {
+        try (final ByteArrayInputStream fis = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
             blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", fis);
         }
 
@@ -173,6 +168,40 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         Assert.assertEquals(payloadByUuid, content);
         Assert.assertEquals(payloadByPath, content);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testUpdateBlobPayload() throws SQLException, IOException {
+        final String contentOld = RandomStringUtils.randomAlphanumeric(256);
+        final String contentNew = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File file = File.createTempFile("tmp-", ".txt");
+
+        /* insert to blob */
+        UUID blobId;
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(contentOld.getBytes(StandardCharsets.US_ASCII))) {
+            blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", bais);
+        }
+
+        /* check content */
+        final String payloadByUuidOld = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPathOld = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuidOld, contentOld);
+        Assert.assertEquals(payloadByPathOld, contentOld);
+
+        /* update payload */
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(contentNew.getBytes(StandardCharsets.US_ASCII))) {
+            blobPool.updateBlobPayload(blobId, bais);
+        }
+
+        /* check content */
+        final String payloadByUuidNew = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPathNew = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuidNew, contentNew);
+        Assert.assertEquals(payloadByPathNew, contentNew);
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})

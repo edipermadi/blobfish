@@ -186,6 +186,16 @@ public interface BlobPool {
     boolean updateBlobPath(UUID blobId, String newPath) throws SQLException;
 
     /**
+     * Update blob payload
+     *
+     * @param blobId     blob identifier
+     * @param newPayload new blob payload
+     * @return true when updated successfully
+     * @throws SQLException when updating blob failed
+     */
+    boolean updateBlobPayload(UUID blobId, InputStream newPayload) throws SQLException;
+
+    /**
      * Get blob metadata by blob identifier
      *
      * @param blobId blob identifier

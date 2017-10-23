@@ -443,6 +443,23 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public boolean updateBlobPayload(final UUID blobId, final InputStream newPayload) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("blobId is null");
+        } else if (newPayload == null) {
+            throw new IllegalArgumentException("input stream is null");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_UPDATE_BLOBS_PAYLOAD_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setBinaryStream(1, newPayload);
+            preparedStatement.setString(2, blobId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
     public Blob.SimplifiedMetadata getBlobMetadata(final UUID blobId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("invalid blob identifier");
