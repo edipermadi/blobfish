@@ -145,6 +145,37 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testUpdateBlobPath() throws SQLException, IOException {
+        final String content = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File fileOld = File.createTempFile("tmp-", ".txt");
+        final File fileNew = File.createTempFile("tmp-", ".txt");
+        try (final FileOutputStream fos = new FileOutputStream(fileOld);
+             final OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+            writer.write(content);
+            writer.flush();
+        }
+
+        /* insert to blob */
+        UUID blobId;
+        try (final FileInputStream fis = new FileInputStream(fileOld)) {
+            blobId = blobPool.createBlob(fileOld.getAbsolutePath(), "text/plain", fis);
+        }
+
+        /* update blob path */
+        final boolean updated = blobPool.updateBlobPath(blobId, fileNew.getAbsolutePath());
+        Assert.assertTrue(updated);
+
+        /* check content */
+        final String payloadByUuid = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPath = new String(blobPool.getBlobPayload(fileNew.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuid, content);
+        Assert.assertEquals(payloadByPath, content);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobByTag() throws SQLException {
         boolean empty = false;
 

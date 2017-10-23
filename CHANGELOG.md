@@ -7,6 +7,7 @@
 - Create blob
 - Get blob payload by path
 - Get blob metadata (by id or path)
+- Update blob path
 
 ## v2.2.0 [October 22, 2017]
 

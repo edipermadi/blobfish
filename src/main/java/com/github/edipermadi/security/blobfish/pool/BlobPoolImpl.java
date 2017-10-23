@@ -27,7 +27,6 @@ final class BlobPoolImpl implements BlobPool {
     private final Properties queries;
     private final Connection connection;
     private Set<String> recipientNames = new HashSet<>();
-    private Set<String> blobPaths = new HashSet<>();
 
     /**
      * Class constructor
@@ -301,8 +300,6 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("mimetype is null or empty");
         } else if (payload == null) {
             throw new IllegalArgumentException("payload is null");
-        } else if (blobPaths.contains(path)) {
-            throw new IllegalStateException("blob path is already taken");
         }
 
         /* prepare query parameters */
@@ -320,7 +317,6 @@ final class BlobPoolImpl implements BlobPool {
                 throw new SQLException("failed to insert blob");
             }
 
-            blobPaths.add(path);
             return blobId;
         }
     }
@@ -386,7 +382,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public byte[] getBlobPayload(UUID blobId) throws SQLException, IOException {
+    public byte[] getBlobPayload(final UUID blobId) throws SQLException, IOException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
@@ -406,8 +402,10 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public byte[] getBlobPayload(String path) throws SQLException, IOException {
+    public byte[] getBlobPayload(final String path) throws SQLException, IOException {
         if (path == null) {
+            throw new IllegalArgumentException("blob path is null");
+        } else if (!path.startsWith("/") || path.endsWith("/")) {
             throw new IllegalArgumentException("invalid blob path");
         }
 
@@ -422,6 +420,25 @@ final class BlobPoolImpl implements BlobPool {
             }
             final InputStream inputStream = resultSet.getBinaryStream("payload");
             return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public boolean updateBlobPath(final UUID blobId, final String newPath) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("blobId is null");
+        } else if (newPath == null) {
+            throw new IllegalArgumentException("blob path is null");
+        } else if (!newPath.startsWith("/") || newPath.endsWith("/")) {
+            throw new IllegalArgumentException("invalid blob path");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_UPDATE_BLOBS_PATH_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, newPath);
+            preparedStatement.setString(2, blobId.toString());
+            return preparedStatement.executeUpdate() > 0;
         }
     }
 
