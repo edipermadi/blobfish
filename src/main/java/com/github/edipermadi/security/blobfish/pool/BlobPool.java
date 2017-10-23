@@ -76,7 +76,7 @@ public interface BlobPool {
     String getTag(UUID tagId) throws SQLException;
 
     /**
-     * Remove a tag
+     * Update a tag
      *
      * @param tagId tag identifier
      * @param tag   new value of tag
@@ -86,13 +86,13 @@ public interface BlobPool {
     boolean updateTag(UUID tagId, String tag) throws SQLException;
 
     /**
-     * Remove a tag
+     * Delete a tag
      *
      * @param tagId tag identifier
      * @return true when tag deleted successfully
      * @throws SQLException when updating tag failed
      */
-    boolean removeTag(UUID tagId) throws SQLException;
+    boolean deleteTag(UUID tagId) throws SQLException;
 
     /**
      * Create blob
@@ -214,7 +214,15 @@ public interface BlobPool {
     Blob.SimplifiedMetadata getBlobMetadata(String path) throws SQLException;
 
     /**
-     * Add recipient
+     * Delete a blob
+     * @param blobId blob identifier
+     * @return true when deleted successfully
+     * @throws SQLException when blob deletion failed
+     */
+    boolean deleteBlob(UUID blobId) throws SQLException;
+
+    /**
+     * Create recipient
      *
      * @param name        name of recipient
      * @param metadata    optional metadata for user

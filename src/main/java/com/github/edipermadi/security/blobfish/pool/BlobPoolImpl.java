@@ -270,7 +270,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean removeTag(final UUID tagId) throws SQLException {
+    public boolean deleteTag(final UUID tagId) throws SQLException {
         if (tagId == null) {
             throw new IllegalArgumentException("tagId is null");
         }
@@ -524,6 +524,20 @@ final class BlobPoolImpl implements BlobPool {
                     return retrievedMimetype;
                 }
             };
+        }
+    }
+
+    @Override
+    public boolean deleteBlob(final UUID blobId) throws SQLException {
+        if(blobId == null){
+            throw new IllegalArgumentException("blob identifier is null");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_DELETE_BLOBS_PATH_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            return preparedStatement.executeUpdate() > 0;
         }
     }
 

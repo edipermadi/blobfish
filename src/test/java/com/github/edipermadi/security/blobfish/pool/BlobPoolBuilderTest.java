@@ -139,6 +139,34 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         Assert.assertEquals(payloadByPath, content);
     }
 
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"}, expectedExceptions = NoSuchElementException.class)
+    public void testDeleteBlob() throws SQLException, IOException {
+        final String content = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File file = File.createTempFile("tmp-", ".txt");
+
+        /* insert to blob */
+        UUID blobId;
+        try (final ByteArrayInputStream fis = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
+            blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", fis);
+        }
+
+        /* check content */
+        final String payloadByUuid = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPath = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuid, content);
+        Assert.assertEquals(payloadByPath, content);
+
+        /* delete blob */
+        final boolean deleted = blobPool.deleteBlob(blobId);
+        Assert.assertTrue(deleted);
+
+        /* make sure its not exist and exception thrown */
+        blobPool.getBlobMetadata(blobId);
+    }
+
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testUpdateBlobPath() throws SQLException, IOException {
         final String content = RandomStringUtils.randomAlphanumeric(256);
@@ -501,8 +529,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         }
 
         /* remove there */
-        final boolean removed = blobPool.removeTag(tagId);
-        Assert.assertTrue(removed);
+        final boolean deleted = blobPool.deleteTag(tagId);
+        Assert.assertTrue(deleted);
 
         /* make sure association is removed */
         empty = false;
