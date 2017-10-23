@@ -12,11 +12,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
@@ -110,7 +108,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     public void testListTags() throws SQLException {
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 log("found entry");
                 log("  uuid : %s", entry.getKey());
@@ -121,13 +119,127 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testCreateBlob() throws SQLException, IOException {
+        final String content = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File file = File.createTempFile("tmp-", ".txt");
+
+        /* insert to blob */
+        UUID blobId;
+        try (final ByteArrayInputStream fis = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
+            blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", fis);
+        }
+
+        /* check content */
+        final String payloadByUuid = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPath = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuid, content);
+        Assert.assertEquals(payloadByPath, content);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"}, expectedExceptions = NoSuchElementException.class)
+    public void testDeleteBlob() throws SQLException, IOException {
+        final String content = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File file = File.createTempFile("tmp-", ".txt");
+
+        /* insert to blob */
+        UUID blobId;
+        try (final ByteArrayInputStream fis = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
+            blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", fis);
+        }
+
+        /* check content */
+        final String payloadByUuid = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPath = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuid, content);
+        Assert.assertEquals(payloadByPath, content);
+
+        /* delete blob */
+        final boolean deleted = blobPool.deleteBlob(blobId);
+        Assert.assertTrue(deleted);
+
+        /* make sure its not exist and exception thrown */
+        blobPool.getBlobMetadata(blobId);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testUpdateBlobPath() throws SQLException, IOException {
+        final String content = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File fileOld = File.createTempFile("tmp-", ".txt");
+        final File fileNew = File.createTempFile("tmp-", ".txt");
+        try (final FileOutputStream fos = new FileOutputStream(fileOld);
+             final OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+            writer.write(content);
+            writer.flush();
+        }
+
+        /* insert to blob */
+        UUID blobId;
+        try (final FileInputStream fis = new FileInputStream(fileOld)) {
+            blobId = blobPool.createBlob(fileOld.getAbsolutePath(), "text/plain", fis);
+        }
+
+        /* update blob path */
+        final boolean updated = blobPool.updateBlobPath(blobId, fileNew.getAbsolutePath());
+        Assert.assertTrue(updated);
+
+        /* check content */
+        final String payloadByUuid = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPath = new String(blobPool.getBlobPayload(fileNew.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuid, content);
+        Assert.assertEquals(payloadByPath, content);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testUpdateBlobPayload() throws SQLException, IOException {
+        final String contentOld = RandomStringUtils.randomAlphanumeric(256);
+        final String contentNew = RandomStringUtils.randomAlphanumeric(256);
+
+        /* write to temporary file */
+        final File file = File.createTempFile("tmp-", ".txt");
+
+        /* insert to blob */
+        UUID blobId;
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(contentOld.getBytes(StandardCharsets.US_ASCII))) {
+            blobId = blobPool.createBlob(file.getAbsolutePath(), "text/plain", bais);
+        }
+
+        /* check content */
+        final String payloadByUuidOld = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPathOld = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuidOld, contentOld);
+        Assert.assertEquals(payloadByPathOld, contentOld);
+
+        /* update payload */
+        try (final ByteArrayInputStream bais = new ByteArrayInputStream(contentNew.getBytes(StandardCharsets.US_ASCII))) {
+            blobPool.updateBlobPayload(blobId, bais);
+        }
+
+        /* check content */
+        final String payloadByUuidNew = new String(blobPool.getBlobPayload(blobId), StandardCharsets.UTF_8);
+        final String payloadByPathNew = new String(blobPool.getBlobPayload(file.getAbsolutePath()), StandardCharsets.UTF_8);
+
+        Assert.assertEquals(payloadByUuidNew, contentNew);
+        Assert.assertEquals(payloadByPathNew, contentNew);
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobByTag() throws SQLException {
         boolean empty = false;
 
         /* list tags */
         final Set<UUID> tagIds = new HashSet<>();
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> tags = blobPool.listAvailableTags(page, 10);
+            final Map<UUID, String> tags = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
                 tagIds.add(entry.getKey());
             }
@@ -334,10 +446,10 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         /* add tag to all blobs */
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                final boolean added = blobPool.addTag(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();
@@ -346,7 +458,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* ensure that blobs have that tag */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -362,10 +474,10 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         /* remove tag from all blobs */
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.removeTagFromBlob(blobId, tagId);
+                final boolean added = blobPool.removeTag(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();
@@ -374,7 +486,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* ensure that those blobs don't have that tag */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -395,10 +507,10 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* add tag to all blobs */
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                final boolean added = blobPool.addTag(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();
@@ -407,7 +519,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         /* make sure association is there */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -417,12 +529,13 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         }
 
         /* remove there */
-        blobPool.removeTag(tagId);
+        final boolean deleted = blobPool.deleteTag(tagId);
+        Assert.assertTrue(deleted);
 
         /* make sure association is removed */
         empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
                 final Map<UUID, String> tags = blobPool.getBlobTags(blobId);
@@ -438,8 +551,10 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testListBlobs() throws SQLException, IOException {
         boolean empty = false;
+
+        log("listing blobs");
         for (int page = 1; !empty; page++) {
-            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listAvailableBlobs(page, 10);
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
                 final Blob.SimplifiedMetadata metadata = entry.getValue();
                 final Map<UUID, String> tags = blobPool.getBlobTags(entry.getKey());
@@ -450,11 +565,11 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                     tagValues.add(tag.getValue());
                 }
 
-                log("found entry");
-                log("  uuid      : %s", entry.getKey());
-                log("  mime-type : %s", metadata.getMimeType());
-                log("  path      : %s", metadata.getPath());
-                log("  tags      : %s", Joiner.on(", ").join(tagValues));
+                log("  found entry");
+                log("    uuid      : %s", entry.getKey());
+                log("    mime-type : %s", metadata.getMimeType());
+                log("    path      : %s", metadata.getPath());
+                log("    tags      : %s", Joiner.on(", ").join(tagValues));
 
                 final File file = new File(metadata.getPath());
                 final File dir = new File("target");
@@ -462,6 +577,58 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 try (final FileOutputStream fos = new FileOutputStream(outFile)) {
                     fos.write(payload);
                 }
+            }
+            empty = blobs.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testListBlobs"})
+    public void testGetBlobMetadata() throws SQLException, IOException {
+        boolean empty = false;
+
+        log("getting blob metadata");
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                final UUID blobId = entry.getKey();
+                final Blob.SimplifiedMetadata metadata = entry.getValue();
+
+                final String path = metadata.getPath();
+                final Blob.SimplifiedMetadata metadataById = blobPool.getBlobMetadata(blobId);
+                final Blob.SimplifiedMetadata metadataByPath = blobPool.getBlobMetadata(path);
+
+                /* compare values */
+                Assert.assertEquals(metadata.getPath(), metadataById.getPath());
+                Assert.assertEquals(metadata.getMimeType(), metadataById.getMimeType());
+                Assert.assertEquals(metadata.getPath(), metadataByPath.getPath());
+                Assert.assertEquals(metadata.getMimeType(), metadataByPath.getMimeType());
+
+                log("  found entry");
+                log("    uuid      : %s", entry.getKey());
+                log("    mime-type : %s", metadata.getMimeType());
+                log("    path      : %s", metadata.getPath());
+            }
+            empty = blobs.isEmpty();
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testGetBlobPayloadByPath() throws SQLException, IOException {
+        boolean empty = false;
+
+        log("tag getting blob payload by path");
+        for (int page = 1; !empty; page++) {
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.listBlobs(page, 10);
+            for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                final Blob.SimplifiedMetadata metadata = entry.getValue();
+                final byte[] payloadByUuid = blobPool.getBlobPayload(entry.getKey());
+                final byte[] payloadByPath = blobPool.getBlobPayload(metadata.getPath());
+                Assert.assertEquals(payloadByUuid, payloadByPath);
+
+                log("  found entry");
+                log("    uuid      : %s", entry.getKey());
+                log("    mime-type : %s", metadata.getMimeType());
+                log("    path      : %s", metadata.getPath());
             }
             empty = blobs.isEmpty();
         }
@@ -478,7 +645,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         final Set<String> tags = new HashSet<>();
         boolean empty = false;
         for (int page = 1; !empty; page++) {
-            final Map<UUID, String> entries = blobPool.listAvailableTags(page, 10);
+            final Map<UUID, String> entries = blobPool.listTags(page, 10);
             for (final Map.Entry<UUID, String> entry : entries.entrySet()) {
                 tags.add(entry.getValue());
             }

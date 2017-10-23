@@ -77,7 +77,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, String> listAvailableTags(final int page, final int size) throws SQLException {
+    public Map<UUID, String> listTags(final int page, final int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -109,7 +109,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, Blob.SimplifiedMetadata> listAvailableBlobs(int page, int size) throws SQLException {
+    public Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -270,7 +270,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean removeTag(final UUID tagId) throws SQLException {
+    public boolean deleteTag(final UUID tagId) throws SQLException {
         if (tagId == null) {
             throw new IllegalArgumentException("tagId is null");
         }
@@ -287,6 +287,37 @@ final class BlobPoolImpl implements BlobPool {
         try (final PreparedStatement preparedStatement = connection.prepareStatement(removeTagsByTagIdQuery)) {
             preparedStatement.setString(1, tagId.toString());
             return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public UUID createBlob(final String path, final String mimetype, final InputStream payload) throws SQLException {
+        if ((path == null) || path.trim().isEmpty()) {
+            throw new IllegalArgumentException("path is null or empty");
+        } else if (!path.startsWith("/") || path.endsWith("/")) {
+            throw new IllegalArgumentException("path has to be absolute, and it has to be a file");
+        } else if ((mimetype == null) || mimetype.trim().isEmpty()) {
+            throw new IllegalArgumentException("mimetype is null or empty");
+        } else if (payload == null) {
+            throw new IllegalArgumentException("payload is null");
+        }
+
+        /* prepare query parameters */
+        final UUID blobId = UUID.randomUUID();
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_INSERT_BLOB");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            preparedStatement.setString(2, path);
+            preparedStatement.setString(3, mimetype);
+            preparedStatement.setBinaryStream(4, payload);
+            preparedStatement.setBoolean(5, false);
+            if (preparedStatement.executeUpdate() < 1) {
+                throw new SQLException("failed to insert blob");
+            }
+
+            return blobId;
         }
     }
 
@@ -319,7 +350,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean addTagToBlob(final UUID blobId, final UUID tagId) throws SQLException {
+    public boolean addTag(final UUID blobId, final UUID tagId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("invalid blob identifier");
         } else if (tagId == null) {
@@ -335,7 +366,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean removeTagFromBlob(final UUID blobId, final UUID tagId) throws SQLException {
+    public boolean removeTag(final UUID blobId, final UUID tagId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("invalid blob identifier");
         } else if (tagId == null) {
@@ -351,22 +382,162 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public byte[] getBlobPayload(UUID blobId) throws SQLException, IOException {
+    public byte[] getBlobPayload(final UUID blobId) throws SQLException, IOException {
         if (blobId == null) {
             throw new IllegalArgumentException("blobId is null");
         }
 
         /* execute query */
-        final String query = queries.getProperty("SQL_GET_BLOB_BY_UUID");
+        final String query = queries.getProperty("SQL_GET_BLOBS_PAYLOAD_BY_UUID");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, blobId.toString());
             final ResultSet resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next()) {
-                throw new NoSuchElementException("no such blob " + blobId);
+                throw new NoSuchElementException("no such blob with id " + blobId);
             }
             final InputStream inputStream = resultSet.getBinaryStream("payload");
             return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public byte[] getBlobPayload(final String path) throws SQLException, IOException {
+        if (path == null) {
+            throw new IllegalArgumentException("blob path is null");
+        } else if (!path.startsWith("/") || path.endsWith("/")) {
+            throw new IllegalArgumentException("invalid blob path");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_GET_BLOBS_PAYLOAD_BY_PATH");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, path);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob at path " + path);
+            }
+            final InputStream inputStream = resultSet.getBinaryStream("payload");
+            return IOUtils.toByteArray(inputStream);
+        }
+    }
+
+    @Override
+    public boolean updateBlobPath(final UUID blobId, final String newPath) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("blobId is null");
+        } else if (newPath == null) {
+            throw new IllegalArgumentException("blob path is null");
+        } else if (!newPath.startsWith("/") || newPath.endsWith("/")) {
+            throw new IllegalArgumentException("invalid blob path");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_UPDATE_BLOBS_PATH_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, newPath);
+            preparedStatement.setString(2, blobId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public boolean updateBlobPayload(final UUID blobId, final InputStream newPayload) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("blobId is null");
+        } else if (newPayload == null) {
+            throw new IllegalArgumentException("input stream is null");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_UPDATE_BLOBS_PAYLOAD_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setBinaryStream(1, newPayload);
+            preparedStatement.setString(2, blobId.toString());
+            return preparedStatement.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public Blob.SimplifiedMetadata getBlobMetadata(final UUID blobId) throws SQLException {
+        if (blobId == null) {
+            throw new IllegalArgumentException("invalid blob identifier");
+        }
+
+        final String query = queries.getProperty("SQL_GET_BLOBS_METADATA_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob with id " + blobId);
+            }
+
+            /* get values */
+            final String retrievedPath = resultSet.getString("path");
+            final String retrievedMimetype = resultSet.getString("mimetype");
+
+            /* return as simplified metadata */
+            return new Blob.SimplifiedMetadata() {
+                @Override
+                public String getPath() {
+                    return retrievedPath;
+                }
+
+                @Override
+                public String getMimeType() {
+                    return retrievedMimetype;
+                }
+            };
+        }
+    }
+
+    @Override
+    public Blob.SimplifiedMetadata getBlobMetadata(String path) throws SQLException {
+        if (path == null) {
+            throw new IllegalArgumentException("invalid blob path");
+        }
+
+        final String query = queries.getProperty("SQL_GET_BLOBS_METADATA_BY_PATH");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, path);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new NoSuchElementException("no such blob at path" + path);
+            }
+
+            /* get values */
+            final String retrievedPath = resultSet.getString("path");
+            final String retrievedMimetype = resultSet.getString("mimetype");
+
+            /* return as simplified metadata */
+            return new Blob.SimplifiedMetadata() {
+                @Override
+                public String getPath() {
+                    return retrievedPath;
+                }
+
+                @Override
+                public String getMimeType() {
+                    return retrievedMimetype;
+                }
+            };
+        }
+    }
+
+    @Override
+    public boolean deleteBlob(final UUID blobId) throws SQLException {
+        if(blobId == null){
+            throw new IllegalArgumentException("blob identifier is null");
+        }
+
+        /* execute query */
+        final String query = queries.getProperty("SQL_DELETE_BLOBS_PATH_BY_UUID");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, blobId.toString());
+            return preparedStatement.executeUpdate() > 0;
         }
     }
 
@@ -597,10 +768,12 @@ final class BlobPoolImpl implements BlobPool {
             /* insert blob */
             final String insertBlobQuery = queries.getProperty("SQL_INSERT_BLOB");
             try (final PreparedStatement preparedStatement = connection.prepareStatement(insertBlobQuery, Statement.RETURN_GENERATED_KEYS)) {
-                preparedStatement.setString(1, path);
-                preparedStatement.setString(2, mimeType);
-                preparedStatement.setBinaryStream(3, new ByteArrayInputStream(payload));
-                preparedStatement.setBoolean(4, true);
+                final UUID blobUuid = UUID.randomUUID();
+                preparedStatement.setString(1, blobUuid.toString());
+                preparedStatement.setString(2, path);
+                preparedStatement.setString(3, mimeType);
+                preparedStatement.setBinaryStream(4, new ByteArrayInputStream(payload));
+                preparedStatement.setBoolean(5, true);
                 if (preparedStatement.executeUpdate() == 0) {
                     throw new SQLException("failed to insert blob");
                 }

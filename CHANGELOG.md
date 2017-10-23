@@ -1,5 +1,16 @@
 # Blobfish Changelog
 
+## v2.3.0 [October 23, 2017]
+
+**New Features**
+
+- Create blob
+- Get blob payload by path
+- Get blob metadata (by id or path)
+- Update blob path
+- Update blob payload
+- Delete a blob 
+
 ## v2.2.0 [October 22, 2017]
 
 **Enhancement**
