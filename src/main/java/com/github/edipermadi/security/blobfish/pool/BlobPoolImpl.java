@@ -350,7 +350,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean addTagToBlob(final UUID blobId, final UUID tagId) throws SQLException {
+    public boolean addTag(final UUID blobId, final UUID tagId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("invalid blob identifier");
         } else if (tagId == null) {
@@ -366,7 +366,7 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public boolean removeTagFromBlob(final UUID blobId, final UUID tagId) throws SQLException {
+    public boolean removeTag(final UUID blobId, final UUID tagId) throws SQLException {
         if (blobId == null) {
             throw new IllegalArgumentException("invalid blob identifier");
         } else if (tagId == null) {

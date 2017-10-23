@@ -449,7 +449,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                final boolean added = blobPool.addTag(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();
@@ -477,7 +477,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.removeTagFromBlob(blobId, tagId);
+                final boolean added = blobPool.removeTag(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();
@@ -510,7 +510,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
             final Map<UUID, Blob.SimplifiedMetadata> entries = blobPool.listBlobs(page, 10);
             for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : entries.entrySet()) {
                 final UUID blobId = entry.getKey();
-                final boolean added = blobPool.addTagToBlob(blobId, tagId);
+                final boolean added = blobPool.addTag(blobId, tagId);
                 Assert.assertTrue(added);
             }
             empty = entries.isEmpty();

@@ -134,7 +134,7 @@ public interface BlobPool {
      * @return true when added successfully
      * @throws SQLException when assigning tag failed
      */
-    boolean addTagToBlob(UUID blobId, UUID tagId) throws SQLException;
+    boolean addTag(UUID blobId, UUID tagId) throws SQLException;
 
     /**
      * Remove tag from a blob
@@ -144,7 +144,7 @@ public interface BlobPool {
      * @return true when removed successfully
      * @throws SQLException when de-assigning tag failed
      */
-    boolean removeTagFromBlob(UUID blobId, UUID tagId) throws SQLException;
+    boolean removeTag(UUID blobId, UUID tagId) throws SQLException;
 
     /**
      * Get tags of a particular blob
