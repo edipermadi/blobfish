@@ -69,13 +69,13 @@ public interface BlobPool {
     /**
      * Find tags which contains given string
      *
-     * @param value tag value
-     * @param page  number starts from 1
-     * @param size  page size at least 1
+     * @param keyword keyword to look for
+     * @param page    number starts from 1
+     * @param size    page size at least 1
      * @return map of tag id and string
      * @throws SQLException when reading tags failed
      */
-    Map<UUID, String> findTags(String value, int page, int size) throws SQLException;
+    Map<UUID, String> findTags(String keyword, int page, int size) throws SQLException;
 
     /**
      * Get tag value by tag uuid
@@ -254,6 +254,17 @@ public interface BlobPool {
      * @throws SQLException when listing recipient failed
      */
     Map<UUID, String> listRecipient(int page, int size) throws SQLException;
+
+    /**
+     * Find recipient containing given keyword
+     *
+     * @param keyword keyword to look for
+     * @param page    page number, starts from 1
+     * @param size    page size, at least 1
+     * @return map of recipient-uuid to recipient-name
+     * @throws SQLException when listing recipient failed
+     */
+    Map<UUID, String> findRecipient(String keyword, int page, int size) throws SQLException;
 
     /**
      * Get recipient certificate

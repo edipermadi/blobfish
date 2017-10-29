@@ -389,6 +389,26 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testCreateRecipient"})
+    public void testFindRecipient() throws SQLException {
+        Assert.assertNotNull(blobPool);
+
+        final String[] keywords = {"edipermadi", "github", "blobfish"};
+        for(final String keyword:keywords){
+            log("finding recipient with keyword '%s'", keyword);
+            boolean empty = false;
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, String> recipients = blobPool.findRecipient(keyword, page, 10);
+                for (Map.Entry<UUID, String> entry : recipients.entrySet()) {
+                    log("  found recipient");
+                    log("    uuid : %s", entry.getKey());
+                    log("    name : %s", entry.getValue());
+                }
+                empty = recipients.isEmpty();
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testCreateRecipient"})
     public void testGetRecipientCertificate() throws SQLException, CertificateException, IOException {
         Assert.assertNotNull(blobPool);
 

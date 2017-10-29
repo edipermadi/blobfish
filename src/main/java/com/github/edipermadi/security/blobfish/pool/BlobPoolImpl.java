@@ -109,9 +109,9 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
-    public Map<UUID, String> findTags(final String value, final int page, final int size) throws SQLException {
-        if ((value == null) || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("invalid tag value");
+    public Map<UUID, String> findTags(final String keyword, final int page, final int size) throws SQLException {
+        if ((keyword == null) || keyword.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid tag keyword");
         } else if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
         } else if (size < 1) {
@@ -121,7 +121,7 @@ final class BlobPoolImpl implements BlobPool {
         /* prepare parameters */
         final long offset = (page - 1) * size;
         final String template = queries.getProperty("SQL_SELECT_TAGS_LIKE");
-        final String query = String.format(template, value);
+        final String query = String.format(template, keyword);
 
         /* execute query */
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -622,6 +622,36 @@ final class BlobPoolImpl implements BlobPool {
         /* run query */
         final Map<UUID, String> recipients = new HashMap<>();
         final String query = queries.getProperty("SQL_SELECT_RECIPIENTS");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String name = resultSet.getString("name");
+                recipients.put(UUID.fromString(uuid), name);
+            }
+            return recipients;
+        }
+    }
+
+    @Override
+    public Map<UUID, String> findRecipient(final String keyword, final int page, final int size) throws SQLException {
+        if ((keyword == null) || keyword.trim().isEmpty()) {
+            throw new IllegalArgumentException("keyword is invalid");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+
+        /* run query */
+        final Map<UUID, String> recipients = new HashMap<>();
+        final String template = queries.getProperty("SQL_SELECT_RECIPIENTS_LIKE");
+        final String query = String.format(template, keyword, keyword);
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setLong(1, offset);
             preparedStatement.setLong(2, size);
