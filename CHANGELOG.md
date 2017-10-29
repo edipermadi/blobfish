@@ -8,6 +8,12 @@
 - Find recipients with `name` or `metadata` containing given keyword
 - Find blobs with `path` containing given keyword
 
+## v3.0.0-SNAPSHOT
+
+**New Features**
+
+- TBD
+
 ## v2.3.0 [October 23, 2017]
 
 **New Features**
