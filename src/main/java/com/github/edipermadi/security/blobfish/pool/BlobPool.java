@@ -67,6 +67,17 @@ public interface BlobPool {
     Map<UUID, String> listTags(int page, int size) throws SQLException;
 
     /**
+     * Find tags which contains given string
+     *
+     * @param keyword keyword to look for
+     * @param page    number starts from 1
+     * @param size    page size at least 1
+     * @return map of tag id and string
+     * @throws SQLException when reading tags failed
+     */
+    Map<UUID, String> findTags(String keyword, int page, int size) throws SQLException;
+
+    /**
      * Get tag value by tag uuid
      *
      * @param tagId tag identifier
@@ -114,6 +125,17 @@ public interface BlobPool {
      * @throws SQLException when reading blob failed
      */
     Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException;
+
+    /**
+     * Find blobs that it's path matching given keyword
+     *
+     * @param keyword keyword to look for
+     * @param page    number starts from 1
+     * @param size    page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> findBlobs(String keyword, int page, int size) throws SQLException;
 
     /**
      * List blobs which has given tag
@@ -215,6 +237,7 @@ public interface BlobPool {
 
     /**
      * Delete a blob
+     *
      * @param blobId blob identifier
      * @return true when deleted successfully
      * @throws SQLException when blob deletion failed
@@ -242,6 +265,17 @@ public interface BlobPool {
      * @throws SQLException when listing recipient failed
      */
     Map<UUID, String> listRecipient(int page, int size) throws SQLException;
+
+    /**
+     * Find recipient containing given keyword
+     *
+     * @param keyword keyword to look for
+     * @param page    page number, starts from 1
+     * @param size    page size, at least 1
+     * @return map of recipient-uuid to recipient-name
+     * @throws SQLException when listing recipient failed
+     */
+    Map<UUID, String> findRecipient(String keyword, int page, int size) throws SQLException;
 
     /**
      * Get recipient certificate

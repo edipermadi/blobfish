@@ -109,6 +109,41 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public Map<UUID, String> findTags(final String keyword, final int page, final int size) throws SQLException {
+        if ((keyword == null) || keyword.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid tag keyword");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final String template = queries.getProperty("SQL_SELECT_TAGS_LIKE");
+        final String query = String.format(template, keyword);
+
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+
+            /* read results */
+            final Map<UUID, String> tags = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String tag = resultSet.getString("tag");
+                tags.put(UUID.fromString(uuid), tag);
+
+            }
+
+            return tags;
+        }
+    }
+
+    @Override
     public Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
@@ -119,6 +154,50 @@ final class BlobPoolImpl implements BlobPool {
         /* prepare parameters */
         final long offset = (page - 1) * size;
         final String query = queries.getProperty("SQL_LIST_BLOB");
+
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+            /* read results */
+            final Map<UUID, Blob.SimplifiedMetadata> blobs = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String path = resultSet.getString("path");
+                final String mimetype = resultSet.getString("mimetype");
+                blobs.put(UUID.fromString(uuid), new Blob.SimplifiedMetadata() {
+                    @Override
+                    public String getPath() {
+                        return path;
+                    }
+
+                    @Override
+                    public String getMimeType() {
+                        return mimetype;
+                    }
+                });
+            }
+
+            return blobs;
+        }
+    }
+
+    @Override
+    public Map<UUID, Blob.SimplifiedMetadata> findBlobs(final String keyword, final int page, final int size) throws SQLException {
+        if ((keyword == null) || keyword.trim().isEmpty()) {
+            throw new IllegalArgumentException("keyword is invalid");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final String template = queries.getProperty("SQL_LIST_BLOB_LIKE");
+        final String query = String.format(template, keyword);
 
         /* execute query */
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -529,7 +608,7 @@ final class BlobPoolImpl implements BlobPool {
 
     @Override
     public boolean deleteBlob(final UUID blobId) throws SQLException {
-        if(blobId == null){
+        if (blobId == null) {
             throw new IllegalArgumentException("blob identifier is null");
         }
 
@@ -587,6 +666,36 @@ final class BlobPoolImpl implements BlobPool {
         /* run query */
         final Map<UUID, String> recipients = new HashMap<>();
         final String query = queries.getProperty("SQL_SELECT_RECIPIENTS");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String name = resultSet.getString("name");
+                recipients.put(UUID.fromString(uuid), name);
+            }
+            return recipients;
+        }
+    }
+
+    @Override
+    public Map<UUID, String> findRecipient(final String keyword, final int page, final int size) throws SQLException {
+        if ((keyword == null) || keyword.trim().isEmpty()) {
+            throw new IllegalArgumentException("keyword is invalid");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+
+        /* run query */
+        final Map<UUID, String> recipients = new HashMap<>();
+        final String template = queries.getProperty("SQL_SELECT_RECIPIENTS_LIKE");
+        final String query = String.format(template, keyword, keyword);
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setLong(1, offset);
             preparedStatement.setLong(2, size);

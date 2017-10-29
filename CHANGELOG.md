@@ -1,5 +1,13 @@
 # Blobfish Changelog
 
+## v2.4.0 [October 29, 2017]
+
+**New Features**
+
+- Find tags with `tag` value similar to given keyword
+- Find recipients with `name` or `metadata` containing given keyword
+- Find blobs with `path` containing given keyword
+
 ## v2.3.0 [October 23, 2017]
 
 **New Features**

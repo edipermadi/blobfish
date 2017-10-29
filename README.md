@@ -37,6 +37,9 @@ Image courtesy of [Blobby the Blobfish](http://thelastblobfish.tumblr.com/)
     - [x] Recipient CRUD access
     - [x] Blob CRUD access
     - [x] Tag CRUD access
+    - [x] Find blobs by path
+    - [x] Find tags by value
+    - [x] Find recipients by name or metadata
 
 ## Blobfish Random Facts
 - [The Ugliest Animal](https://www.theguardian.com/environment/2013/sep/12/blobfish-world-ugliest-animal)
