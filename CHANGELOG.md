@@ -4,7 +4,7 @@
 
 **New Features**
 
-- TBD
+- Find tags similar to given value
 
 ## v2.3.0 [October 23, 2017]
 

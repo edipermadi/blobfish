@@ -119,6 +119,25 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testFindTags() throws SQLException {
+        final String[] keywords = {"fish", "deep", "sea"};
+
+        for (final String keyword : keywords) {
+            log("looking for keyword '%s'", keyword);
+            boolean empty = false;
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, String> tags = blobPool.findTags(keyword, page, 10);
+                for (final Map.Entry<UUID, String> entry : tags.entrySet()) {
+                    log("  found entry");
+                    log("    uuid : %s", entry.getKey());
+                    log("    tag  : %s", entry.getValue());
+                }
+                empty = tags.isEmpty();
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
     public void testCreateBlob() throws SQLException, IOException {
         final String content = RandomStringUtils.randomAlphanumeric(256);
 
@@ -221,7 +240,8 @@ public final class BlobPoolBuilderTest extends AbstractTest {
 
         /* update payload */
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(contentNew.getBytes(StandardCharsets.US_ASCII))) {
-            blobPool.updateBlobPayload(blobId, bais);
+            final boolean updated = blobPool.updateBlobPayload(blobId, bais);
+            Assert.assertTrue(updated);
         }
 
         /* check content */

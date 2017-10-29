@@ -109,6 +109,41 @@ final class BlobPoolImpl implements BlobPool {
     }
 
     @Override
+    public Map<UUID, String> findTags(final String value, final int page, final int size) throws SQLException {
+        if ((value == null) || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid tag value");
+        } else if (page < 1) {
+            throw new IllegalArgumentException("page number is invalid");
+        } else if (size < 1) {
+            throw new IllegalArgumentException("page size is invalid");
+        }
+
+        /* prepare parameters */
+        final long offset = (page - 1) * size;
+        final String template = queries.getProperty("SQL_SELECT_TAGS_LIKE");
+        final String query = String.format(template, value);
+
+        /* execute query */
+        try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1, offset);
+            preparedStatement.setLong(2, size);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+
+
+            /* read results */
+            final Map<UUID, String> tags = new HashMap<>();
+            while (resultSet.next()) {
+                final String uuid = resultSet.getString("uuid");
+                final String tag = resultSet.getString("tag");
+                tags.put(UUID.fromString(uuid), tag);
+
+            }
+
+            return tags;
+        }
+    }
+
+    @Override
     public Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException {
         if (page < 1) {
             throw new IllegalArgumentException("page number is invalid");
@@ -529,7 +564,7 @@ final class BlobPoolImpl implements BlobPool {
 
     @Override
     public boolean deleteBlob(final UUID blobId) throws SQLException {
-        if(blobId == null){
+        if (blobId == null) {
             throw new IllegalArgumentException("blob identifier is null");
         }
 

@@ -67,6 +67,17 @@ public interface BlobPool {
     Map<UUID, String> listTags(int page, int size) throws SQLException;
 
     /**
+     * Find tags which contains given string
+     *
+     * @param value tag value
+     * @param page  number starts from 1
+     * @param size  page size at least 1
+     * @return map of tag id and string
+     * @throws SQLException when reading tags failed
+     */
+    Map<UUID, String> findTags(String value, int page, int size) throws SQLException;
+
+    /**
      * Get tag value by tag uuid
      *
      * @param tagId tag identifier
@@ -215,6 +226,7 @@ public interface BlobPool {
 
     /**
      * Delete a blob
+     *
      * @param blobId blob identifier
      * @return true when deleted successfully
      * @throws SQLException when blob deletion failed
