@@ -622,6 +622,43 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         }
     }
 
+    @Test(dependsOnMethods = {"testImportPayloadByPrivateKey"})
+    public void testFindBlobs() throws SQLException, IOException {
+        final String[] keywords = {"amused", "annoyed", "free", "glasses", "happy", "sad", "surprised"};
+
+        for(final String keyword : keywords) {
+            boolean empty = false;
+            log("listing blobs with keyword '%s'", keyword);
+            for (int page = 1; !empty; page++) {
+                final Map<UUID, Blob.SimplifiedMetadata> blobs = blobPool.findBlobs(keyword, page, 10);
+                for (final Map.Entry<UUID, Blob.SimplifiedMetadata> entry : blobs.entrySet()) {
+                    final Blob.SimplifiedMetadata metadata = entry.getValue();
+                    final Map<UUID, String> tags = blobPool.getBlobTags(entry.getKey());
+                    final byte[] payload = blobPool.getBlobPayload(entry.getKey());
+
+                    final Set<String> tagValues = new HashSet<>();
+                    for (final Map.Entry<UUID, String> tag : tags.entrySet()) {
+                        tagValues.add(tag.getValue());
+                    }
+
+                    log("  found entry");
+                    log("    uuid      : %s", entry.getKey());
+                    log("    mime-type : %s", metadata.getMimeType());
+                    log("    path      : %s", metadata.getPath());
+                    log("    tags      : %s", Joiner.on(", ").join(tagValues));
+
+                    final File file = new File(metadata.getPath());
+                    final File dir = new File("target");
+                    final File outFile = new File(dir, "pool-" + file.getName());
+                    try (final FileOutputStream fos = new FileOutputStream(outFile)) {
+                        fos.write(payload);
+                    }
+                }
+                empty = blobs.isEmpty();
+            }
+        }
+    }
+
     @Test(dependsOnMethods = {"testListBlobs"})
     public void testGetBlobMetadata() throws SQLException, IOException {
         boolean empty = false;

@@ -127,6 +127,17 @@ public interface BlobPool {
     Map<UUID, Blob.SimplifiedMetadata> listBlobs(int page, int size) throws SQLException;
 
     /**
+     * Find blobs that it's path matching given keyword
+     *
+     * @param keyword keyword to look for
+     * @param page    number starts from 1
+     * @param size    page size at least 1
+     * @return map of blob uuid and corresponding metadata
+     * @throws SQLException when reading blob failed
+     */
+    Map<UUID, Blob.SimplifiedMetadata> findBlobs(String keyword, int page, int size) throws SQLException;
+
+    /**
      * List blobs which has given tag
      *
      * @param tagId tag identifier

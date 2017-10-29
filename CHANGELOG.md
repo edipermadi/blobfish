@@ -5,7 +5,8 @@
 **New Features**
 
 - Find tags with `tag` value similar to given keyword
-- Find recipient with `name` or `metadata` containing given keyword
+- Find recipients with `name` or `metadata` containing given keyword
+- Find blobs with `path` containing given keyword
 
 ## v2.3.0 [October 23, 2017]
 
