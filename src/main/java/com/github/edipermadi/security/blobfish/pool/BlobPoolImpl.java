@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final class BlobPoolImpl implements BlobPool {
     private final Properties queries;
     private final Connection connection;
-    private Set<String> recipientNames = new HashSet<>();
+    private final Set<String> recipientNames = new HashSet<>();
 
     /**
      * Class constructor
@@ -85,7 +85,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
         final String query = queries.getProperty("SQL_SELECT_TAGS");
 
         /* execute query */
@@ -152,7 +152,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
         final String query = queries.getProperty("SQL_LIST_BLOB");
 
         /* execute query */
@@ -195,7 +195,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
         final String template = queries.getProperty("SQL_LIST_BLOB_LIKE");
         final String query = String.format(template, keyword);
 
@@ -239,7 +239,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
         final String query = queries.getProperty("SQL_LIST_BLOB_WITH_TAG_UUID");
 
         /* execute query */
@@ -381,12 +381,10 @@ final class BlobPoolImpl implements BlobPool {
             throw new IllegalArgumentException("payload is null");
         }
 
-        /* prepare query parameters */
-        final UUID blobId = UUID.randomUUID();
-
         /* execute query */
         final String query = queries.getProperty("SQL_INSERT_BLOB");
         try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            final UUID blobId = UUID.randomUUID();
             preparedStatement.setString(1, blobId.toString());
             preparedStatement.setString(2, path);
             preparedStatement.setString(3, mimetype);
