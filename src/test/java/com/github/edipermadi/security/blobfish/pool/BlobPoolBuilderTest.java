@@ -42,7 +42,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         log("using keystore file password : %s", keystoreFilePassword);
 
         this.keyStore = KeyStore.getInstance("JKS");
-        try (final FileInputStream fis = new FileInputStream(new File(keystoreFilePath))) {
+        try (final FileInputStream fis = new FileInputStream(keystoreFilePath)) {
             keyStore.load(fis, keystoreFilePassword.toCharArray());
         }
     }
@@ -77,7 +77,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 .setDbFile(dbFile)
                 .setDbPassword(dbPassword)
                 .build();
-        try (final FileInputStream fis = new FileInputStream(new File(blobPath))) {
+        try (final FileInputStream fis = new FileInputStream(blobPath)) {
             pool.importPayload(fis, blobPassword);
         }
     }
@@ -97,7 +97,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
                 .setDbFile(dbFile)
                 .setDbPassword(dbPassword)
                 .build();
-        try (final FileInputStream fis = new FileInputStream(new File(blobPath))) {
+        try (final FileInputStream fis = new FileInputStream(blobPath)) {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyStoreAlias);
             final PrivateKey privateKey = (PrivateKey) keyStore.getKey(keyStoreAlias, keyStoreEntryPassword.toCharArray());
             blobPool.importPayload(fis, certificate, privateKey);
@@ -353,7 +353,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testCreateRecipient"})
-    public void testUpdateRecipientMetadata() throws KeyStoreException, SQLException {
+    public void testUpdateRecipientMetadata() throws SQLException {
         Assert.assertNotNull(blobPool);
 
         log("updating recipient metadata");
@@ -660,7 +660,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
     }
 
     @Test(dependsOnMethods = {"testListBlobs"})
-    public void testGetBlobMetadata() throws SQLException, IOException {
+    public void testGetBlobMetadata() throws SQLException {
         boolean empty = false;
 
         log("getting blob metadata");
