@@ -11,13 +11,11 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -25,10 +23,8 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.security.*;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,7 +47,7 @@ public final class ContainerEncodingTest extends AbstractTest {
         log("using keystore file password : %s", keystoreFilePassword);
 
         this.keyStore = KeyStore.getInstance("JKS");
-        try (final FileInputStream fis = new FileInputStream(new File(keystoreFilePath))) {
+        try (final FileInputStream fis = new FileInputStream(keystoreFilePath)) {
             keyStore.load(fis, keystoreFilePassword.toCharArray());
         }
     }
@@ -91,7 +87,7 @@ public final class ContainerEncodingTest extends AbstractTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     @Parameters({"keystore-alias-enc-sender"})
-    public void whenRsaSigningCertificateIsGivenThenExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+    public void whenRsaSigningCertificateIsGivenThenExceptionThrown(final String alias) throws KeyStoreException {
         final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .setSigningCertificate(certificate);
@@ -113,7 +109,7 @@ public final class ContainerEncodingTest extends AbstractTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     @Parameters({"keystore-alias-sig-sender"})
-    public void whenEcEncryptionCertificateIsGivenThenExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+    public void whenEcEncryptionCertificateIsGivenThenExceptionThrown(final String alias) throws KeyStoreException {
         final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .addRecipientCertificate(certificate);
@@ -153,7 +149,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                        final String senderEncryptionAlias,
                                                                        final String recipient1EncryptionAlias,
                                                                        final String recipient2EncryptionAlias,
-                                                                       final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                       final String password) throws KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
         final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
@@ -183,7 +179,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                         final String senderEncryptionAlias,
                                                                         final String recipient1EncryptionAlias,
                                                                         final String recipient2EncryptionAlias,
-                                                                        final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                        final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
         final X509Certificate recipient1EncryptionCertificate = (X509Certificate) keyStore.getCertificate(recipient1EncryptionAlias);
@@ -213,7 +209,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                   final String senderEncryptionAlias,
                                                                   final String recipient1EncryptionAlias,
                                                                   final String recipient2EncryptionAlias,
-                                                                  final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                  final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -236,7 +232,7 @@ public final class ContainerEncodingTest extends AbstractTest {
     @Test(expectedExceptions = IllegalStateException.class)
     public void whenEncryptionCertificateIsEmptyThenBuildingThrowsException(final String entryPassword,
                                                                             final String senderSigningAlias,
-                                                                            final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                            final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -260,7 +256,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                             final String senderSigningAlias,
                                                             final String senderEncryptionAlias,
                                                             final String recipient1EncryptionAlias,
-                                                            final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                            final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -295,7 +291,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                              final String senderSigningAlias,
                                                              final String senderEncryptionAlias,
                                                              final String recipient1EncryptionAlias,
-                                                             final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                             final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -330,7 +326,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                    final String senderSigningAlias,
                                                                    final String senderEncryptionAlias,
                                                                    final String recipient1EncryptionAlias,
-                                                                   final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                   final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -365,7 +361,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                  final String senderSigningAlias,
                                                                  final String senderEncryptionAlias,
                                                                  final String recipient1EncryptionAlias,
-                                                                 final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                 final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -400,7 +396,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                             final String senderSigningAlias,
                                                             final String senderEncryptionAlias,
                                                             final String recipient1EncryptionAlias,
-                                                            final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                            final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -435,7 +431,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                 final String senderSigningAlias,
                                                                 final String senderEncryptionAlias,
                                                                 final String recipient1EncryptionAlias,
-                                                                final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -470,7 +466,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                  final String senderSigningAlias,
                                                                  final String senderEncryptionAlias,
                                                                  final String recipient1EncryptionAlias,
-                                                                 final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                 final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -506,7 +502,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                                    final String senderSigningAlias,
                                                                    final String senderEncryptionAlias,
                                                                    final String recipient1EncryptionAlias,
-                                                                   final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                                   final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -536,7 +532,7 @@ public final class ContainerEncodingTest extends AbstractTest {
     //------------------------------------------------------------------------------------------------------------------
     @Test
     @Parameters({"keystore-alias-sig-sender"})
-    public void whenEcSigningCertificateIsGivenThenNoExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+    public void whenEcSigningCertificateIsGivenThenNoExceptionThrown(final String alias) throws KeyStoreException {
         final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .setSigningCertificate(certificate);
@@ -544,7 +540,7 @@ public final class ContainerEncodingTest extends AbstractTest {
 
     @Test
     @Parameters({"keystore-alias-enc-sender"})
-    public void whenRsaEncryptionCertificateIsGivenThenNoExceptionThrown(final String alias) throws NoSuchAlgorithmException, KeyStoreException {
+    public void whenRsaEncryptionCertificateIsGivenThenNoExceptionThrown(final String alias) throws KeyStoreException {
         final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
         new ContainerEncoderBuilder()
                 .addRecipientCertificate(certificate);
@@ -575,7 +571,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                         final String senderSigningAlias,
                                                         final String senderEncryptionAlias,
                                                         final String recipient1EncryptionAlias,
-                                                        final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                        final String recipient2EncryptionAlias) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -607,7 +603,7 @@ public final class ContainerEncodingTest extends AbstractTest {
                                                          final String senderEncryptionAlias,
                                                          final String recipient1EncryptionAlias,
                                                          final String recipient2EncryptionAlias,
-                                                         final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchPaddingException, CertificateEncodingException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, InvalidKeySpecException, BlobfishCryptoException, BlobfishEncodeException {
+                                                         final String password) throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, IOException, BlobfishCryptoException, BlobfishEncodeException {
         final PrivateKey privateKey = (PrivateKey) keyStore.getKey(senderSigningAlias, entryPassword.toCharArray());
         final X509Certificate senderSigningCertificate = (X509Certificate) keyStore.getCertificate(senderSigningAlias);
         final X509Certificate senderEncryptionCertificate = (X509Certificate) keyStore.getCertificate(senderEncryptionAlias);
@@ -696,7 +692,7 @@ public final class ContainerEncodingTest extends AbstractTest {
     private void addBlob(final ContainerEncoder encoder, final String path, final Set<String> tags) throws IOException, BlobfishCryptoException, BlobfishEncodeException {
         final File file = new File(path);
         final Metadata metadata = new Metadata();
-        metadata.set(Metadata.RESOURCE_NAME_KEY, file.toString());
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, file.toString());
 
         try (final FileInputStream fis = new FileInputStream(file)) {
             final MediaType type = tika.getDetector().detect(TikaInputStream.get(Paths.get(path)), metadata);

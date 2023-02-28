@@ -11,6 +11,7 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 import org.testng.Assert;
 import org.testng.annotations.*;
@@ -753,7 +754,7 @@ public final class ContainerEncodingTest extends AbstractTest {
     private void addBlob(final ContainerEncoder encoder, final String path, final Set<String> tags) throws IOException, BlobfishCryptoException, BlobfishEncodeException {
         final File file = new File(path);
         final Metadata metadata = new Metadata();
-        metadata.set(Metadata.RESOURCE_NAME_KEY, file.toString());
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, file.toString());
 
         try (final FileInputStream fis = new FileInputStream(file)) {
             final MediaType type = tika.getDetector().detect(TikaInputStream.get(Paths.get(path)), metadata);

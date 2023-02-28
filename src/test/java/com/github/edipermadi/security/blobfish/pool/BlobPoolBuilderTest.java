@@ -293,7 +293,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         final List<String> aliases = Arrays.asList(alias1, alias2, alias3);
         for (final String alias : aliases) {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
-            final String subject = certificate.getSubjectDN().toString();
+            final String subject = certificate.getSubjectX500Principal().toString();
             final String name = RandomStringUtils.randomAlphanumeric(16);
             final UUID recipientId = blobPool.createRecipient(name, subject, certificate);
             log("created recipient %s", recipientId);
@@ -310,7 +310,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         final List<UUID> recipientIds = new ArrayList<>();
         for (final String alias : aliases) {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(alias);
-            final String subject = certificate.getSubjectDN().toString();
+            final String subject = certificate.getSubjectX500Principal().toString();
             final String name = RandomStringUtils.randomAlphanumeric(16);
             final UUID recipientId = blobPool.createRecipient(name, subject, certificate);
             recipientIds.add(recipientId);

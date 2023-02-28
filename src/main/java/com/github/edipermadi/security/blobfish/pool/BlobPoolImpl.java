@@ -119,7 +119,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
         final String template = queries.getProperty("SQL_SELECT_TAGS_LIKE");
         final String query = String.format(template, keyword);
 
@@ -659,7 +659,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
 
         /* run query */
         final Map<UUID, String> recipients = new HashMap<>();
@@ -688,7 +688,7 @@ final class BlobPoolImpl implements BlobPool {
         }
 
         /* prepare parameters */
-        final long offset = (page - 1) * size;
+        final long offset = (long) (page - 1) * size;
 
         /* run query */
         final Map<UUID, String> recipients = new HashMap<>();
@@ -871,6 +871,16 @@ final class BlobPoolImpl implements BlobPool {
             final String mimeType = metadata.getMimeType();
             final String path = metadata.getPath();
             final AtomicLong blobId = new AtomicLong(-1);
+
+            if ((path == null) || path.trim().isEmpty()) {
+                throw new IllegalArgumentException("path is null or empty");
+            } else if (!path.startsWith("/") || path.endsWith("/")) {
+                throw new IllegalArgumentException("path has to be absolute, and it has to be a file");
+            } else if ((mimeType == null) || mimeType.trim().isEmpty()) {
+                throw new IllegalArgumentException("mimetype is null or empty");
+            } else if (payload == null) {
+                throw new IllegalArgumentException("payload is null");
+            }
 
             /* insert blob */
             final String insertBlobQuery = queries.getProperty("SQL_INSERT_BLOB");

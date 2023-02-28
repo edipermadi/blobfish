@@ -118,7 +118,7 @@ public final class ContainerDecodingTest extends AbstractTest {
                     .setInputStream(containerFis)
                     .build();
             final X509Certificate signingCertificate = containerDecoder.getSigningCertificate();
-            log("signing certificate subject : %s", signingCertificate.getSubjectDN());
+            log("signing certificate subject : %s", signingCertificate.getSubjectX500Principal());
         }
     }
 
