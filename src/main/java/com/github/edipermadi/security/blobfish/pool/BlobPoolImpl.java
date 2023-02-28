@@ -59,9 +59,7 @@ final class BlobPoolImpl implements BlobPool {
                 .setInputStream(inputStream)
                 .build();
 
-        /* process blobs */
-        final Iterator<Blob> iterator = decoder.getBlobs(password);
-        load(iterator);
+        load(decoder.getBlobs(password));
     }
 
     @Override
@@ -71,9 +69,7 @@ final class BlobPoolImpl implements BlobPool {
                 .setInputStream(inputStream)
                 .build();
 
-        /* process blobs */
-        final Iterator<Blob> iterator = decoder.getBlobs(certificate, privateKey);
-        load(iterator);
+        load(decoder.getBlobs(certificate, privateKey));
     }
 
     @Override
@@ -863,65 +859,13 @@ final class BlobPoolImpl implements BlobPool {
      * @throws SQLException when importing failed
      */
     private void load(final Iterator<Blob> iterator) throws SQLException {
-        while (iterator.hasNext()) {
+        while (iterator.hasNext()){
             final Blob blob = iterator.next();
-            final byte[] payload = blob.getPayload();
             final Blob.Metadata metadata = blob.getMetadata();
-            final Set<String> tags = metadata.getTags();
-            final String mimeType = metadata.getMimeType();
-            final String path = metadata.getPath();
-            final AtomicLong blobId = new AtomicLong(-1);
-
-            if ((path == null) || path.trim().isEmpty()) {
-                throw new IllegalArgumentException("path is null or empty");
-            } else if (!path.startsWith("/") || path.endsWith("/")) {
-                throw new IllegalArgumentException("path has to be absolute, and it has to be a file");
-            } else if ((mimeType == null) || mimeType.trim().isEmpty()) {
-                throw new IllegalArgumentException("mimetype is null or empty");
-            } else if (payload == null) {
-                throw new IllegalArgumentException("payload is null");
-            }
-
-            /* insert blob */
-            final String insertBlobQuery = queries.getProperty("SQL_INSERT_BLOB");
-            try (final PreparedStatement preparedStatement = connection.prepareStatement(insertBlobQuery, Statement.RETURN_GENERATED_KEYS)) {
-                final UUID blobUuid = UUID.randomUUID();
-                preparedStatement.setString(1, blobUuid.toString());
-                preparedStatement.setString(2, path);
-                preparedStatement.setString(3, mimeType);
-                preparedStatement.setBinaryStream(4, new ByteArrayInputStream(payload));
-                preparedStatement.setBoolean(5, true);
-                if (preparedStatement.executeUpdate() == 0) {
-                    throw new SQLException("failed to insert blob");
-                }
-
-                /* get blob id */
-                final ResultSet resultSet = preparedStatement.getGeneratedKeys();
-                if (!resultSet.next()) {
-                    throw new SQLException("failed to get inserted blob id");
-                }
-                blobId.set(resultSet.getLong(1));
-            }
-
-            /* insert tags */
-            final String mergeTagQuery = queries.getProperty("SQL_MERGE_TAGS_BY_TAG_VALUE");
-            final String insertBlobTagQuery = queries.getProperty("SQL_INSERT_BLOBS_TAGS_BY_BLOB_ID_AND_TAG_VALUE");
-            for (final String tag : tags) {
-                try (final PreparedStatement preparedStatement = connection.prepareStatement(mergeTagQuery)) {
-                    preparedStatement.setString(1, tag);
-                    if (preparedStatement.executeUpdate() == 0) {
-                        throw new SQLException("failed to merge tag");
-                    }
-                }
-
-                /* insert tags association */
-                try (final PreparedStatement preparedStatement = connection.prepareStatement(insertBlobTagQuery)) {
-                    preparedStatement.setLong(1, blobId.get());
-                    preparedStatement.setString(2, tag);
-                    if (preparedStatement.executeUpdate() == 0) {
-                        throw new SQLException("failed to insert blob-tag association");
-                    }
-                }
+            final UUID blobUuid = this.createBlob(metadata.getPath(), metadata.getMimeType(), new ByteArrayInputStream(blob.getPayload()));
+            for (final String tag : metadata.getTags()) {
+                final UUID tagUuid = this.createTag(tag);
+                this.addTag(blobUuid, tagUuid);
             }
         }
     }

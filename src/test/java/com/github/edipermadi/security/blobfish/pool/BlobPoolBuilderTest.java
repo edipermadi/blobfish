@@ -2,6 +2,8 @@ package com.github.edipermadi.security.blobfish.pool;
 
 import com.github.edipermadi.security.blobfish.AbstractTest;
 import com.github.edipermadi.security.blobfish.Blob;
+import com.github.edipermadi.security.blobfish.codec.ContainerDecoder;
+import com.github.edipermadi.security.blobfish.codec.ContainerDecoderBuilder;
 import com.github.edipermadi.security.blobfish.exc.BlobfishCryptoException;
 import com.github.edipermadi.security.blobfish.exc.BlobfishDecodeException;
 import com.google.common.base.Joiner;
@@ -21,6 +23,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Blob Pool Builder Unit Test
@@ -100,6 +103,7 @@ public final class BlobPoolBuilderTest extends AbstractTest {
         try (final FileInputStream fis = new FileInputStream(blobPath)) {
             final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyStoreAlias);
             final PrivateKey privateKey = (PrivateKey) keyStore.getKey(keyStoreAlias, keyStoreEntryPassword.toCharArray());
+
             blobPool.importPayload(fis, certificate, privateKey);
         }
     }
